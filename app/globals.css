@@ -1,10 +1,21 @@
 @import "tailwindcss";
 
 /* -------------------------------------------------------------------------
-   Theme: semantic variables for multi-theme support.
-   Default = light. Toggle .dark on <html> for dark theme later.
+   Theme system: 6 themes × light/dark + font scale.
+   Apply: <html data-theme="emerald" class="dark" style="--font-scale: 1">
    ------------------------------------------------------------------------- */
+
 :root {
+  --font-scale: 1;
+}
+
+html {
+  font-size: calc(16px * var(--font-scale));
+}
+
+/* Theme 1: Emerald (default) */
+:root,
+[data-theme="emerald"] {
   --background: #f8fafc;
   --foreground: #0f172a;
   --muted: #f1f5f9;
@@ -16,7 +27,7 @@
   --primary-foreground: #ffffff;
 }
 
-.dark {
+[data-theme="emerald"].dark {
   --background: #0f172a;
   --foreground: #f8fafc;
   --muted: #1e293b;
@@ -25,6 +36,131 @@
   --card-foreground: #f8fafc;
   --border: #334155;
   --primary: #10b981;
+  --primary-foreground: #ffffff;
+}
+
+/* Theme 2: Blue */
+[data-theme="blue"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --border: #e2e8f0;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+}
+
+[data-theme="blue"].dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --border: #334155;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+}
+
+/* Theme 3: Violet */
+[data-theme="violet"] {
+  --background: #faf5ff;
+  --foreground: #1e1b4b;
+  --muted: #f3e8ff;
+  --muted-foreground: #6b7280;
+  --card: #ffffff;
+  --card-foreground: #1e1b4b;
+  --border: #e9d5ff;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+}
+
+[data-theme="violet"].dark {
+  --background: #1e1b4b;
+  --foreground: #f5f3ff;
+  --muted: #312e81;
+  --muted-foreground: #a5b4fc;
+  --card: #312e81;
+  --card-foreground: #f5f3ff;
+  --border: #4c1d95;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+}
+
+/* Theme 4: Rose */
+[data-theme="rose"] {
+  --background: #fff1f2;
+  --foreground: #4c0519;
+  --muted: #ffe4e6;
+  --muted-foreground: #9f1239;
+  --card: #ffffff;
+  --card-foreground: #4c0519;
+  --border: #fecdd3;
+  --primary: #e11d48;
+  --primary-foreground: #ffffff;
+}
+
+[data-theme="rose"].dark {
+  --background: #4c0519;
+  --foreground: #fff1f2;
+  --muted: #9f1239;
+  --muted-foreground: #fda4af;
+  --card: #9f1239;
+  --card-foreground: #fff1f2;
+  --border: #be123c;
+  --primary: #fb7185;
+  --primary-foreground: #ffffff;
+}
+
+/* Theme 5: Amber */
+[data-theme="amber"] {
+  --background: #fffbeb;
+  --foreground: #451a03;
+  --muted: #fef3c7;
+  --muted-foreground: #b45309;
+  --card: #ffffff;
+  --card-foreground: #451a03;
+  --border: #fde68a;
+  --primary: #d97706;
+  --primary-foreground: #ffffff;
+}
+
+[data-theme="amber"].dark {
+  --background: #451a03;
+  --foreground: #fffbeb;
+  --muted: #78350f;
+  --muted-foreground: #fcd34d;
+  --card: #78350f;
+  --card-foreground: #fffbeb;
+  --border: #b45309;
+  --primary: #f59e0b;
+  --primary-foreground: #ffffff;
+}
+
+/* Theme 6: Slate */
+[data-theme="slate"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --border: #e2e8f0;
+  --primary: #475569;
+  --primary-foreground: #ffffff;
+}
+
+[data-theme="slate"].dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --border: #334155;
+  --primary: #64748b;
   --primary-foreground: #ffffff;
 }
 
@@ -47,5 +183,3 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
-
-/* Multi-theme: add class="dark" to <html> to switch to dark theme. */

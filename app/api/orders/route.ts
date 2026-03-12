@@ -98,6 +98,21 @@ export async function POST(req: Request) {
           price: i.price,
         })),
       });
+      const admins = await tx.user.findMany({
+        where: { role: "admin" },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await tx.notification.createMany({
+          data: admins.map((a) => ({
+            userId: a.id,
+            type: "order",
+            title: "New order",
+            message: `Order #${orderNumber} created`,
+            link: `/dashboard/orders/${ord.id}`,
+          })),
+        });
+      }
       return tx.order.findUnique({
         where: { id: ord.id },
         include: {

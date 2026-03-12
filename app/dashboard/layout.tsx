@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { HeaderDrawer } from "@/components/dashboard/header-drawer";
 
 export default async function DashboardLayout({
   children,
@@ -15,7 +16,8 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Sidebar role={role} />
-      <main className="pl-64">
+      <HeaderDrawer />
+      <main className="pl-64 pt-16">
         <div className="min-h-screen p-6">{children}</div>
       </main>
     </div>

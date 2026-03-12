@@ -53,6 +53,7 @@ model User {
   products      Product[]  // seller's products
   accounts      Account[]
   sessions      Session[]
+  notifications Notification[]
 }
 
 model Account {
@@ -89,6 +90,19 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // order, payment, etc.
+  title     String
+  message   String?  @db.Text
+  link      String?  // e.g. /dashboard/orders/123
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Category {
