@@ -65,8 +65,8 @@ export function DashboardLayoutProvider({
     layoutMode === "header"
       ? "pl-0 pt-16"
       : sidebarNarrow
-        ? "pl-16 pt-16"
-        : "pl-64 pt-16";
+        ? "pl-16 pt-16 rtl:pl-0 rtl:pr-16"
+        : "pl-64 pt-16 rtl:pl-0 rtl:pr-64";
 
   const value: DashboardLayoutContextValue = {
     layoutMode,

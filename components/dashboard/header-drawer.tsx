@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Settings, X, Sun, Moon } from "lucide-react";
+import { Bell, Settings, X, Sun, Moon, Maximize2, Minimize2, RotateCcw, ArrowLeftRight, Layout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   THEMES,
@@ -18,12 +18,22 @@ import {
   setStoredFontSize,
   setStoredFontFamily,
   applyTheme,
+  resetAllSettings,
   FONT_SIZE_MIN,
   FONT_SIZE_MAX,
   FONT_SIZE_STEP,
+  FONT_SIZE_DEFAULT,
+  getStoredDirection,
+  setStoredDirection,
+  applyDirection,
+  getStoredDensity,
+  setStoredDensity,
+  applyDensity,
   type ThemeId,
   type ThemeMode,
   type FontFamilyId,
+  type Direction,
+  type Density,
 } from "@/lib/theme";
 import { getNavForRole } from "@/lib/dashboard-nav";
 import { useDashboardLayout } from "@/components/dashboard/dashboard-layout-context";
@@ -42,9 +52,10 @@ type Notification = {
 
 export function HeaderDrawer({ role }: { role?: string | null }) {
   const pathname = usePathname();
-  const { layoutMode, setLayoutMode } = useDashboardLayout();
+  const { layoutMode, setLayoutMode, setSidebarCollapsed } = useDashboardLayout();
   const nav = getNavForRole(role);
   const [open, setOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [tab, setTab] = useState<"notifications" | "theme">("notifications");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -52,6 +63,8 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
   const [mode, setMode] = useState<ThemeMode>(() => getStoredMode());
   const [fontSize, setFontSize] = useState<number>(() => getStoredFontSize());
   const [fontFamily, setFontFamily] = useState<FontFamilyId>(() => getStoredFontFamily());
+  const [direction, setDirection] = useState<Direction>(() => getStoredDirection());
+  const [density, setDensity] = useState<Density>(() => getStoredDensity());
 
   function loadNotifications() {
     fetch("/api/notifications?limit=30")
@@ -72,6 +85,49 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
     const t = setInterval(loadNotifications, 45000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () =>
+      setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  async function handleFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (e) {
+      console.error("Fullscreen error:", e);
+    }
+  }
+
+  function handleResetAllSettings() {
+    resetAllSettings();
+    setTheme("emerald");
+    setMode("light");
+    setFontSize(FONT_SIZE_DEFAULT);
+    setFontFamily("geist");
+    setLayoutMode("sidebar");
+    setSidebarCollapsed(false);
+    setDirection("ltr");
+    setDensity("default");
+  }
+
+  function handleDirectionChange(dir: Direction) {
+    setDirection(dir);
+    setStoredDirection(dir);
+    applyDirection(dir);
+  }
+
+  function handleDensityChange(d: Density) {
+    setDensity(d);
+    setStoredDensity(d);
+    applyDensity(d);
+  }
 
   function handleThemeChange(newTheme: ThemeId) {
     setTheme(newTheme);
@@ -140,7 +196,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
           "fixed top-0 z-30 h-16 flex items-center bg-background/95 border-b border-border backdrop-blur",
           layoutMode === "header"
             ? "left-0 right-0 justify-between px-4"
-            : "right-0 gap-2 pr-6 pl-4"
+            : "right-0 gap-2 pr-6 pl-4 rtl:right-auto rtl:left-0 rtl:pl-6 rtl:pr-4"
         )}
       >
         {layoutMode === "header" ? (
@@ -186,7 +242,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
             aria-hidden
           />
           <aside
-            className="fixed top-0 right-0 z-50 w-full max-w-md h-full bg-card border-l border-border shadow-xl flex flex-col"
+            className="fixed top-0 right-0 z-50 w-full max-w-md h-full bg-card shadow-xl flex flex-col border-l border-border rtl:right-auto rtl:left-0 rtl:border-l-0 rtl:border-r rtl:border-border"
             role="dialog"
             aria-label="Settings & Notifications"
           >
@@ -299,6 +355,51 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
                           </span>
                         </button>
                       ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Direction</p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={direction === "ltr" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleDirectionChange("ltr")}
+                        className="gap-2"
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                        Left to right
+                      </Button>
+                      <Button
+                        variant={direction === "rtl" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleDirectionChange("rtl")}
+                        className="gap-2"
+                      >
+                        <ArrowLeftRight className="h-4 w-4 rotate-180" />
+                        Right to left
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Density</p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={density === "default" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleDensityChange("default")}
+                        className="gap-2"
+                      >
+                        Default
+                      </Button>
+                      <Button
+                        variant={density === "compact" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleDensityChange("compact")}
+                        className="gap-2"
+                      >
+                        <Layout className="h-4 w-4" />
+                        Compact
+                      </Button>
                     </div>
                   </div>
                   <div>
@@ -422,6 +523,35 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
                         </span>
                       ))}
                     </div>
+                  </div>
+                  <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleFullscreen}
+                      className="w-full justify-center gap-2"
+                    >
+                      {isFullscreen ? (
+                        <>
+                          <Minimize2 className="h-4 w-4" />
+                          Exit full screen
+                        </>
+                      ) : (
+                        <>
+                          <Maximize2 className="h-4 w-4" />
+                          Full screen
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetAllSettings}
+                      className="w-full justify-center gap-2 text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset all settings
+                    </Button>
                   </div>
                 </div>
               )}

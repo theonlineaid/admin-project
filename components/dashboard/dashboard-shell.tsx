@@ -18,7 +18,7 @@ export function DashboardShell({
       <Sidebar role={role} />
       <HeaderDrawer role={role} />
       <main className={mainPaddingClass}>
-        <div className="min-h-screen p-6">{children}</div>
+        <div className="dashboard-main-content min-h-screen p-6">{children}</div>
       </main>
     </div>
   );

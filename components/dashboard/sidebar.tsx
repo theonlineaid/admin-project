@@ -21,7 +21,8 @@ export function Sidebar({ role }: { role?: string | null }) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen border-r border-border bg-card flex flex-col transition-[width]",
+        "fixed top-0 z-40 h-screen bg-card flex flex-col transition-[width]",
+        "left-0 border-r border-border rtl:left-auto rtl:right-0 rtl:border-r-0 rtl:border-l rtl:border-border",
         narrow ? "w-16" : "w-64"
       )}
     >

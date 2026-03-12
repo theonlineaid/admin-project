@@ -34,8 +34,14 @@ const STORAGE_KEY_FONT_SIZE = "dashboard-font-size";
 const STORAGE_KEY_FONT_FAMILY = "dashboard-font-family";
 const STORAGE_KEY_LAYOUT = "dashboard-layout";
 const STORAGE_KEY_SIDEBAR_COLLAPSED = "dashboard-sidebar-collapsed";
+const STORAGE_KEY_DIRECTION = "dashboard-direction";
+const STORAGE_KEY_DENSITY = "dashboard-density";
 
 export type ThemeMode = "light" | "dark";
+
+export type Direction = "ltr" | "rtl";
+
+export type Density = "default" | "compact";
 
 /** Root font size in px: 12 to 22. Default 16. */
 export const FONT_SIZE_MIN = 12;
@@ -139,4 +145,57 @@ export function setStoredSidebarCollapsed(collapsed: boolean) {
 export function applyLayout(mode: LayoutMode) {
   if (typeof document === "undefined") return;
   document.documentElement.setAttribute("data-dashboard-layout", mode);
+}
+
+export function getStoredDirection(): Direction {
+  if (typeof window === "undefined") return "ltr";
+  const v = localStorage.getItem(STORAGE_KEY_DIRECTION);
+  if (v === "ltr" || v === "rtl") return v;
+  return "ltr";
+}
+
+export function setStoredDirection(dir: Direction) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY_DIRECTION, dir);
+}
+
+/** Applies to entire website (html element). Affects all pages: login, dashboard, etc. */
+export function applyDirection(dir: Direction) {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("dir", dir);
+}
+
+export function getStoredDensity(): Density {
+  if (typeof window === "undefined") return "default";
+  const v = localStorage.getItem(STORAGE_KEY_DENSITY);
+  if (v === "default" || v === "compact") return v;
+  return "default";
+}
+
+export function setStoredDensity(density: Density) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY_DENSITY, density);
+}
+
+/** Applies to entire website (html element). Affects all pages: login, dashboard, etc. */
+export function applyDensity(density: Density) {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-density", density);
+}
+
+/** Reset all dashboard settings to defaults and apply them. Call from client only. */
+export function resetAllSettings() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  setStoredTheme("emerald");
+  setStoredMode("light");
+  setStoredFontSize(FONT_SIZE_DEFAULT);
+  setStoredFontFamily("geist");
+  setStoredLayout("sidebar");
+  setStoredSidebarCollapsed(false);
+  setStoredDirection("ltr");
+  setStoredDensity("default");
+  applyTheme("emerald", "light", FONT_SIZE_DEFAULT, "geist");
+  applyLayout("sidebar");
+  applyDirection("ltr");
+  applyDensity("default");
 }
