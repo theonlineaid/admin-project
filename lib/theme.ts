@@ -19,10 +19,21 @@ export const FONT_FAMILIES = [
 
 export type FontFamilyId = (typeof FONT_FAMILIES)[number]["id"];
 
+/** Layout: sidebar (full + collapse btn), collapsed (icons only), header (nav in top bar). */
+export const LAYOUT_MODES = [
+  { id: "sidebar", name: "Sidebar", description: "Full sidebar with collapse" },
+  { id: "collapsed", name: "Icons only", description: "Collapsed sidebar" },
+  { id: "header", name: "Top header", description: "All nav in header" },
+] as const;
+
+export type LayoutMode = (typeof LAYOUT_MODES)[number]["id"];
+
 const STORAGE_KEY_THEME = "dashboard-theme";
 const STORAGE_KEY_MODE = "dashboard-mode";
 const STORAGE_KEY_FONT_SIZE = "dashboard-font-size";
 const STORAGE_KEY_FONT_FAMILY = "dashboard-font-family";
+const STORAGE_KEY_LAYOUT = "dashboard-layout";
+const STORAGE_KEY_SIDEBAR_COLLAPSED = "dashboard-sidebar-collapsed";
 
 export type ThemeMode = "light" | "dark";
 
@@ -101,4 +112,31 @@ export function applyTheme(
   const ffId = fontFamilyId ?? (typeof window !== "undefined" ? getStoredFontFamily() : "geist");
   const ff = FONT_FAMILIES.find((f) => f.id === ffId);
   if (ff) root.style.setProperty("--user-font-family", ff.fontFamily);
+}
+
+export function getStoredLayout(): LayoutMode {
+  if (typeof window === "undefined") return "sidebar";
+  const v = localStorage.getItem(STORAGE_KEY_LAYOUT);
+  if (v && LAYOUT_MODES.some((l) => l.id === v)) return v as LayoutMode;
+  return "sidebar";
+}
+
+export function setStoredLayout(mode: LayoutMode) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY_LAYOUT, mode);
+}
+
+export function getStoredSidebarCollapsed(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(STORAGE_KEY_SIDEBAR_COLLAPSED) === "true";
+}
+
+export function setStoredSidebarCollapsed(collapsed: boolean) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY_SIDEBAR_COLLAPSED, collapsed ? "true" : "false");
+}
+
+export function applyLayout(mode: LayoutMode) {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-dashboard-layout", mode);
 }

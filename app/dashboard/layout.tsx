@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { HeaderDrawer } from "@/components/dashboard/header-drawer";
+import { DashboardLayoutProvider } from "@/components/dashboard/dashboard-layout-context";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export default async function DashboardLayout({
   children,
@@ -14,12 +14,8 @@ export default async function DashboardLayout({
   const role = (session.user as { role?: string }).role;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Sidebar role={role} />
-      <HeaderDrawer />
-      <main className="pl-64 pt-16">
-        <div className="min-h-screen p-6">{children}</div>
-      </main>
-    </div>
+    <DashboardLayoutProvider role={role}>
+      <DashboardShell role={role}>{children}</DashboardShell>
+    </DashboardLayoutProvider>
   );
 }

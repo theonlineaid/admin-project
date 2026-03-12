@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, Settings, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   THEMES,
   FONT_FAMILIES,
+  LAYOUT_MODES,
   getStoredTheme,
   getStoredMode,
   getStoredFontSize,
@@ -23,7 +25,10 @@ import {
   type ThemeMode,
   type FontFamilyId,
 } from "@/lib/theme";
+import { getNavForRole } from "@/lib/dashboard-nav";
+import { useDashboardLayout } from "@/components/dashboard/dashboard-layout-context";
 import { formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 type Notification = {
   id: string;
@@ -35,7 +40,10 @@ type Notification = {
   createdAt: string;
 };
 
-export function HeaderDrawer() {
+export function HeaderDrawer({ role }: { role?: string | null }) {
+  const pathname = usePathname();
+  const { layoutMode, setLayoutMode } = useDashboardLayout();
+  const nav = getNavForRole(role);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"notifications" | "theme">("notifications");
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -98,31 +106,76 @@ export function HeaderDrawer() {
     fetch("/api/notifications/read-all", { method: "POST" }).then(() => loadNotifications());
   }
 
+  const headerRight = (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => { setOpen(true); setTab("notifications"); }}
+        className="relative p-2 rounded-lg hover:bg-muted text-foreground"
+        title="Notifications"
+      >
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center px-1">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => { setOpen(true); setTab("theme"); }}
+        className="gap-2"
+      >
+        <Settings className="h-4 w-4" />
+        Theme
+      </Button>
+    </div>
+  );
+
   return (
     <>
-      <div className="fixed top-0 right-0 z-30 h-16 flex items-center gap-2 pr-6 pl-4 bg-background/95 border-b border-border backdrop-blur">
-        <button
-          type="button"
-          onClick={() => { setOpen(true); setTab("notifications"); }}
-          className="relative p-2 rounded-lg hover:bg-muted text-foreground"
-          title="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center px-1">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
-        </button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => { setOpen(true); setTab("theme"); }}
-          className="gap-2"
-        >
-          <Settings className="h-4 w-4" />
-          Theme
-        </Button>
+      <div
+        className={cn(
+          "fixed top-0 z-30 h-16 flex items-center bg-background/95 border-b border-border backdrop-blur",
+          layoutMode === "header"
+            ? "left-0 right-0 justify-between px-4"
+            : "right-0 gap-2 pr-6 pl-4"
+        )}
+      >
+        {layoutMode === "header" ? (
+          <>
+            <div className="flex items-center gap-1 overflow-x-auto">
+              <Link href="/dashboard" className="font-semibold text-primary text-lg shrink-0 mr-2">
+                Admin
+              </Link>
+              <nav className="flex items-center gap-0.5">
+                {nav.map((item) => {
+                  const Icon = item.icon;
+                  const active = pathname === item.href || pathname.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors shrink-0",
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+            {headerRight}
+          </>
+        ) : (
+          headerRight
+        )}
       </div>
 
       {open && (
@@ -225,6 +278,29 @@ export function HeaderDrawer() {
               )}
               {tab === "theme" && (
                 <div className="space-y-6">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Layout</p>
+                    <div className="space-y-2">
+                      {LAYOUT_MODES.map((l) => (
+                        <button
+                          key={l.id}
+                          type="button"
+                          onClick={() => setLayoutMode(l.id)}
+                          className={cn(
+                            "w-full rounded-lg border-2 px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                            layoutMode === l.id
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-card text-foreground hover:bg-muted"
+                          )}
+                        >
+                          <span className="block">{l.name}</span>
+                          <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                            {l.description}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div>
                     <p className="text-sm font-medium text-foreground mb-2">Mode</p>
                     <div className="flex gap-2">
