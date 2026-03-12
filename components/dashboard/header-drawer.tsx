@@ -6,18 +6,22 @@ import { Bell, Settings, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   THEMES,
+  FONT_FAMILIES,
   getStoredTheme,
   getStoredMode,
   getStoredFontSize,
+  getStoredFontFamily,
   setStoredTheme,
   setStoredMode,
   setStoredFontSize,
+  setStoredFontFamily,
   applyTheme,
   FONT_SIZE_MIN,
   FONT_SIZE_MAX,
   FONT_SIZE_STEP,
   type ThemeId,
   type ThemeMode,
+  type FontFamilyId,
 } from "@/lib/theme";
 import { formatDate } from "@/lib/utils";
 
@@ -39,6 +43,7 @@ export function HeaderDrawer() {
   const [theme, setTheme] = useState<ThemeId>(() => getStoredTheme());
   const [mode, setMode] = useState<ThemeMode>(() => getStoredMode());
   const [fontSize, setFontSize] = useState<number>(() => getStoredFontSize());
+  const [fontFamily, setFontFamily] = useState<FontFamilyId>(() => getStoredFontFamily());
 
   function loadNotifications() {
     fetch("/api/notifications?limit=30")
@@ -63,20 +68,26 @@ export function HeaderDrawer() {
   function handleThemeChange(newTheme: ThemeId) {
     setTheme(newTheme);
     setStoredTheme(newTheme);
-    applyTheme(newTheme, mode, fontSize);
+    applyTheme(newTheme, mode, fontSize, fontFamily);
   }
 
   function handleModeChange(newMode: ThemeMode) {
     setMode(newMode);
     setStoredMode(newMode);
-    applyTheme(theme, newMode, fontSize);
+    applyTheme(theme, newMode, fontSize, fontFamily);
   }
 
   function handleFontSizeChange(newSize: number) {
     const clamped = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, newSize));
     setFontSize(clamped);
     setStoredFontSize(clamped);
-    applyTheme(theme, mode, clamped);
+    applyTheme(theme, mode, clamped, fontFamily);
+  }
+
+  function handleFontFamilyChange(id: FontFamilyId) {
+    setFontFamily(id);
+    setStoredFontFamily(id);
+    applyTheme(theme, mode, fontSize, id);
   }
 
   function markAsRead(id: string) {
@@ -260,6 +271,25 @@ export function HeaderDrawer() {
                     <span className="inline-block rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background mb-3">
                       Font
                     </span>
+                    <p className="text-sm font-medium text-foreground mb-2">Family</p>
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {FONT_FAMILIES.map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => handleFontFamilyChange(f.id)}
+                          className={`flex flex-col items-center justify-center rounded-lg border-2 py-3 px-2 transition-colors ${
+                            fontFamily === f.id
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background hover:bg-muted text-foreground"
+                          }`}
+                          style={{ fontFamily: f.fontFamily }}
+                        >
+                          <span className="text-lg font-medium">Aa</span>
+                          <span className="text-xs mt-1">{f.name}</span>
+                        </button>
+                      ))}
+                    </div>
                     <p className="text-sm font-medium text-foreground mb-2">Size</p>
                     <div className="relative pt-8 pb-1">
                       <div

@@ -8,6 +8,7 @@
 /* Layout uses fixed 16px root so heights/widths don’t change. Only text scales via --user-font-size (12–22). */
 :root {
   --user-font-size: 16;
+  --user-font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 html {
   font-size: 16px;
@@ -177,7 +178,7 @@ body {
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--user-font-family);
   --font-mono: var(--font-geist-mono);
   /* Font sizes scale with --user-font-size (12–22) so only text changes, not layout */
   --font-size-xs: calc(0.75 * var(--user-font-size, 16) * 1px);
@@ -198,7 +199,7 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Font size slider: gradient track (primary left, muted right), step ticks, thumb */

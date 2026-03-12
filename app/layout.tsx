@@ -26,9 +26,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('dashboard-theme')||'emerald';var m=localStorage.getItem('dashboard-mode')||'light';var f=parseInt(localStorage.getItem('dashboard-font-size'),10);var s=(!isNaN(f)&&f>=12&&f<=22)?f:16;document.documentElement.setAttribute('data-theme',t);document.documentElement.style.setProperty('--user-font-size',String(s));if(m==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');})();`,
+            __html: `(function(){var t=localStorage.getItem('dashboard-theme')||'emerald';var m=localStorage.getItem('dashboard-mode')||'light';var f=parseInt(localStorage.getItem('dashboard-font-size'),10);var s=(!isNaN(f)&&f>=12&&f<=22)?f:16;var ff=localStorage.getItem('dashboard-font-family')||'geist';var ffMap={geist:'var(--font-geist-sans), system-ui, sans-serif',inter:"'Inter', system-ui, sans-serif",public_sans:"'Public Sans', system-ui, sans-serif",dm_sans:"'DM Sans', system-ui, sans-serif"};document.documentElement.setAttribute('data-theme',t);document.documentElement.style.setProperty('--user-font-size',String(s));document.documentElement.style.setProperty('--user-font-family',ffMap[ff]||ffMap.geist);if(m==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');})();`,
           }}
         />
       </head>

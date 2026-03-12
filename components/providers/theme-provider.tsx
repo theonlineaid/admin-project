@@ -16,7 +16,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "dashboard-theme" || e.key === "dashboard-mode" || e.key === "dashboard-font-size") {
+      if (e.key === "dashboard-theme" || e.key === "dashboard-mode" || e.key === "dashboard-font-size" || e.key === "dashboard-font-family") {
         applyTheme(getStoredTheme(), getStoredMode());
       }
     };
