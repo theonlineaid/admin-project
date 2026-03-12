@@ -21,12 +21,13 @@ export function Sidebar({ role }: { role?: string | null }) {
   return (
     <aside
       className={cn(
-        "fixed top-0 z-40 h-screen bg-card flex flex-col transition-[width]",
-        "left-0 border-r border-border rtl:left-auto rtl:right-0 rtl:border-r-0 rtl:border-l rtl:border-border",
+        "fixed top-0 z-40 h-screen flex flex-col transition-[width]",
+        "bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)]",
+        "left-0 border-r rtl:left-auto rtl:right-0 rtl:border-r-0 rtl:border-l border-[var(--sidebar-border)]",
         narrow ? "w-16" : "w-64"
       )}
     >
-      <div className={cn("flex h-16 items-center border-b border-border shrink-0", narrow ? "justify-center px-0" : "px-4")}>
+      <div className={cn("flex h-16 items-center border-b border-[var(--sidebar-border)] shrink-0", narrow ? "justify-center px-0" : "px-4")}>
         {narrow ? (
           layoutMode === "sidebar" ? (
             <div className="flex items-center justify-between w-full px-2">
@@ -81,7 +82,7 @@ export function Sidebar({ role }: { role?: string | null }) {
                 narrow ? "justify-center" : "",
                 active
                   ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-[var(--sidebar-muted)] hover:bg-primary/10 hover:text-[var(--sidebar-fg)]"
               )}
             >
               <Icon className="h-5 w-5 shrink-0" />
@@ -90,11 +91,11 @@ export function Sidebar({ role }: { role?: string | null }) {
           );
         })}
       </nav>
-      <div className={cn("border-t border-border p-2", narrow ? "flex justify-center" : "")}>
+      <div className={cn("border-t border-[var(--sidebar-border)] p-2", narrow ? "flex justify-center" : "")}>
         <Button
           variant="ghost"
           className={cn(
-            "w-full text-muted-foreground hover:text-foreground",
+            "w-full text-[var(--sidebar-muted)] hover:text-[var(--sidebar-fg)]",
             narrow ? "justify-center px-0" : "justify-start gap-3"
           )}
           onClick={() => signOut({ callbackUrl: "/login" })}

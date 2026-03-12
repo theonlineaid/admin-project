@@ -7,8 +7,10 @@ import {
   getStoredMode,
   getStoredDirection,
   getStoredDensity,
+  getStoredColorMode,
   applyDirection,
   applyDensity,
+  applyColorMode,
 } from "@/lib/theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -20,6 +22,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyTheme(theme, mode);
     applyDirection(getStoredDirection());
     applyDensity(getStoredDensity());
+    applyColorMode(getStoredColorMode());
     setMounted(true);
   }, []);
 
@@ -31,6 +34,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
       if (e.key === "dashboard-direction") applyDirection(getStoredDirection());
       if (e.key === "dashboard-density") applyDensity(getStoredDensity());
+      if (e.key === "dashboard-color-mode") applyColorMode(getStoredColorMode());
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);

@@ -36,12 +36,21 @@ const STORAGE_KEY_LAYOUT = "dashboard-layout";
 const STORAGE_KEY_SIDEBAR_COLLAPSED = "dashboard-sidebar-collapsed";
 const STORAGE_KEY_DIRECTION = "dashboard-direction";
 const STORAGE_KEY_DENSITY = "dashboard-density";
+const STORAGE_KEY_COLOR_MODE = "dashboard-color-mode";
 
 export type ThemeMode = "light" | "dark";
 
 export type Direction = "ltr" | "rtl";
 
 export type Density = "default" | "compact";
+
+/** Color: Apparent = theme colors visible; Integrate = muted/unified grey accent */
+export const COLOR_MODES = [
+  { id: "apparent", name: "Apparent" },
+  { id: "integrate", name: "Integrate" },
+] as const;
+
+export type ColorMode = (typeof COLOR_MODES)[number]["id"];
 
 /** Root font size in px: 12 to 22. Default 16. */
 export const FONT_SIZE_MIN = 12;
@@ -183,6 +192,24 @@ export function applyDensity(density: Density) {
   document.documentElement.setAttribute("data-density", density);
 }
 
+export function getStoredColorMode(): ColorMode {
+  if (typeof window === "undefined") return "apparent";
+  const v = localStorage.getItem(STORAGE_KEY_COLOR_MODE);
+  if (v === "apparent" || v === "integrate") return v;
+  return "apparent";
+}
+
+export function setStoredColorMode(mode: ColorMode) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY_COLOR_MODE, mode);
+}
+
+/** Applies to entire website. Integrate = muted primary (grey); Apparent = theme colors. */
+export function applyColorMode(mode: ColorMode) {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-color-mode", mode);
+}
+
 /** Reset all dashboard settings to defaults and apply them. Call from client only. */
 export function resetAllSettings() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -194,8 +221,10 @@ export function resetAllSettings() {
   setStoredSidebarCollapsed(false);
   setStoredDirection("ltr");
   setStoredDensity("default");
+  setStoredColorMode("apparent");
   applyTheme("emerald", "light", FONT_SIZE_DEFAULT, "geist");
   applyLayout("sidebar");
   applyDirection("ltr");
   applyDensity("default");
+  applyColorMode("apparent");
 }

@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Settings, X, Sun, Moon, Maximize2, Minimize2, RotateCcw, ArrowLeftRight, Layout } from "lucide-react";
+import { Bell, Settings, X, Sun, Moon, Maximize2, Minimize2, RotateCcw, ArrowLeftRight, Layout, CircleHelp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   THEMES,
   FONT_FAMILIES,
   LAYOUT_MODES,
+  COLOR_MODES,
   getStoredTheme,
   getStoredMode,
   getStoredFontSize,
@@ -29,11 +30,15 @@ import {
   getStoredDensity,
   setStoredDensity,
   applyDensity,
+  getStoredColorMode,
+  setStoredColorMode,
+  applyColorMode,
   type ThemeId,
   type ThemeMode,
   type FontFamilyId,
   type Direction,
   type Density,
+  type ColorMode,
 } from "@/lib/theme";
 import { getNavForRole } from "@/lib/dashboard-nav";
 import { useDashboardLayout } from "@/components/dashboard/dashboard-layout-context";
@@ -65,6 +70,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
   const [fontFamily, setFontFamily] = useState<FontFamilyId>(() => getStoredFontFamily());
   const [direction, setDirection] = useState<Direction>(() => getStoredDirection());
   const [density, setDensity] = useState<Density>(() => getStoredDensity());
+  const [colorMode, setColorMode] = useState<ColorMode>(() => getStoredColorMode());
 
   function loadNotifications() {
     fetch("/api/notifications?limit=30")
@@ -115,6 +121,13 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
     setSidebarCollapsed(false);
     setDirection("ltr");
     setDensity("default");
+    setColorMode("apparent");
+  }
+
+  function handleColorModeChange(mode: ColorMode) {
+    setColorMode(mode);
+    setStoredColorMode(mode);
+    applyColorMode(mode);
   }
 
   function handleDirectionChange(dir: Direction) {
@@ -334,27 +347,108 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
               )}
               {tab === "theme" && (
                 <div className="space-y-6">
-                  <div>
+                  {/* Nav: Layout as wireframe options */}
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="inline-flex items-center justify-center rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background">
+                        Nav
+                      </span>
+                      <button type="button" className="p-0.5 rounded-full text-muted-foreground hover:text-foreground" title="Layout options">
+                        <CircleHelp className="h-4 w-4" />
+                      </button>
+                    </div>
                     <p className="text-sm font-medium text-foreground mb-2">Layout</p>
-                    <div className="space-y-2">
-                      {LAYOUT_MODES.map((l) => (
-                        <button
-                          key={l.id}
-                          type="button"
-                          onClick={() => setLayoutMode(l.id)}
-                          className={cn(
-                            "w-full rounded-lg border-2 px-3 py-2.5 text-left text-sm font-medium transition-colors",
-                            layoutMode === l.id
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border bg-card text-foreground hover:bg-muted"
-                          )}
-                        >
-                          <span className="block">{l.name}</span>
-                          <span className="block text-xs font-normal text-muted-foreground mt-0.5">
-                            {l.description}
-                          </span>
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Wireframe: left sidebar + content */}
+                      <button
+                        type="button"
+                        onClick={() => setLayoutMode("sidebar")}
+                        className={cn(
+                          "flex flex-col rounded-lg border-2 p-2 min-h-[72px] transition-colors",
+                          layoutMode === "sidebar"
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border bg-muted/30 hover:bg-muted/50"
+                        )}
+                        title="Sidebar (left)"
+                      >
+                        <div className="flex flex-1 gap-0.5 w-full">
+                          <div className={cn("w-4 rounded-sm shrink-0", layoutMode === "sidebar" ? "bg-primary" : "bg-muted-foreground/40")} />
+                          <div className={cn("flex-1 rounded-sm", layoutMode === "sidebar" ? "bg-primary/20" : "bg-muted-foreground/20")} />
+                        </div>
+                      </button>
+                      {/* Wireframe: top bar + content */}
+                      <button
+                        type="button"
+                        onClick={() => setLayoutMode("header")}
+                        className={cn(
+                          "flex flex-col rounded-lg border-2 p-2 min-h-[72px] transition-colors",
+                          layoutMode === "header"
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border bg-muted/30 hover:bg-muted/50"
+                        )}
+                        title="Top header"
+                      >
+                        <div className={cn("w-full h-2 rounded-sm shrink-0 mb-0.5", layoutMode === "header" ? "bg-primary" : "bg-muted-foreground/40")} />
+                        <div className={cn("flex-1 rounded-sm", layoutMode === "header" ? "bg-primary/20" : "bg-muted-foreground/20")} />
+                      </button>
+                      {/* Wireframe: right sidebar + content */}
+                      <button
+                        type="button"
+                        onClick={() => setLayoutMode("collapsed")}
+                        className={cn(
+                          "flex flex-col rounded-lg border-2 p-2 min-h-[72px] transition-colors",
+                          layoutMode === "collapsed"
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border bg-muted/30 hover:bg-muted/50"
+                        )}
+                        title="Icons only (narrow)"
+                      >
+                        <div className="flex flex-1 gap-0.5 w-full">
+                          <div className={cn("flex-1 rounded-sm", layoutMode === "collapsed" ? "bg-primary/20" : "bg-muted-foreground/20")} />
+                          <div className={cn("w-2 rounded-sm shrink-0", layoutMode === "collapsed" ? "bg-primary" : "bg-muted-foreground/40")} />
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                  {/* Color: Integrate / Apparent */}
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-sm font-medium text-foreground">Color</p>
+                      <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleColorModeChange("integrate")}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 rounded-lg border-2 px-4 py-3 flex-1 transition-colors",
+                          colorMode === "integrate"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background hover:bg-muted text-foreground"
+                        )}
+                      >
+                        <div className="flex rounded overflow-hidden border border-border h-8 w-10">
+                          <div className="w-1/2 bg-muted-foreground/50" />
+                          <div className="w-1/2 bg-muted" />
+                        </div>
+                        <span className="text-xs font-medium">Integrate</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleColorModeChange("apparent")}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 rounded-lg border-2 px-4 py-3 flex-1 transition-colors",
+                          colorMode === "apparent"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background hover:bg-muted text-foreground"
+                        )}
+                      >
+                        <div className="flex rounded overflow-hidden border border-border h-8 w-10">
+                          <div className="w-1/2 bg-primary" />
+                          <div className="w-1/2 bg-primary/30" />
+                        </div>
+                        <span className="text-xs font-medium">Apparent</span>
+                      </button>
                     </div>
                   </div>
                   <div>
