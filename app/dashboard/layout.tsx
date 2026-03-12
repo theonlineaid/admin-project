@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardLayoutProvider } from "@/components/dashboard/dashboard-layout-context";
+import { LocaleProvider } from "@/components/providers/locale-provider";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export default async function DashboardLayout({
@@ -15,7 +16,9 @@ export default async function DashboardLayout({
 
   return (
     <DashboardLayoutProvider role={role}>
-      <DashboardShell role={role}>{children}</DashboardShell>
+      <LocaleProvider>
+        <DashboardShell role={role}>{children}</DashboardShell>
+      </LocaleProvider>
     </DashboardLayoutProvider>
   );
 }

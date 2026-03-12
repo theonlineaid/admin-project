@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "products": "Produkte",
+    "orders": "Bestellungen",
+    "users": "Benutzer",
+    "sellers": "Verkäufer",
+    "payments": "Zahlungen",
+    "categories": "Kategorien",
+    "subcategories": "Unterkategorien",
+    "brands": "Marken",
+    "analytics": "Analysen"
+  },
+  "common": {
+    "admin": "Admin",
+    "signOut": "Abmelden",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen"
+  },
+  "settings": {
+    "title": "Einstellungen & Benachrichtigungen",
+    "notifications": "Benachrichtigungen",
+    "theme": "Design",
+    "layout": "Layout",
+    "direction": "Richtung",
+    "density": "Dichte",
+    "mode": "Modus",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "leftToRight": "Links nach rechts",
+    "rightToLeft": "Rechts nach links",
+    "default": "Standard",
+    "compact": "Kompakt",
+    "font": "Schrift",
+    "family": "Familie",
+    "size": "Größe",
+    "color": "Farbe",
+    "integrate": "Integrieren",
+    "apparent": "Sichtbar",
+    "fullScreen": "Vollbild",
+    "exitFullScreen": "Vollbild beenden",
+    "resetAllSettings": "Alle Einstellungen zurücksetzen",
+    "language": "Sprache"
+  }
+}

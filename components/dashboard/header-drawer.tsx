@@ -42,6 +42,7 @@ import {
 } from "@/lib/theme";
 import { getNavForRole } from "@/lib/dashboard-nav";
 import { useDashboardLayout } from "@/components/dashboard/dashboard-layout-context";
+import { useLocale } from "@/components/providers/locale-provider";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +59,7 @@ type Notification = {
 export function HeaderDrawer({ role }: { role?: string | null }) {
   const pathname = usePathname();
   const { layoutMode, setLayoutMode, setSidebarCollapsed } = useDashboardLayout();
+  const { t, locale, setLocale, locales } = useLocale();
   const nav = getNavForRole(role);
   const [open, setOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -197,7 +199,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
         className="gap-2"
       >
         <Settings className="h-4 w-4" />
-        Theme
+        {t("settings.theme")}
       </Button>
     </div>
   );
@@ -216,7 +218,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
           <>
             <div className="flex items-center gap-1 overflow-x-auto">
               <Link href="/dashboard" className="font-semibold text-primary text-lg shrink-0 mr-2">
-                Admin
+                {t("common.admin")}
               </Link>
               <nav className="flex items-center gap-0.5">
                 {nav.map((item) => {
@@ -234,7 +236,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
                       )}
                     >
                       <Icon className="h-4 w-4" />
-                      {item.label}
+                      {t(`nav.${item.key}`)}
                     </Link>
                   );
                 })}
@@ -257,10 +259,10 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
           <aside
             className="fixed top-0 right-0 z-50 w-full max-w-md h-full bg-card shadow-xl flex flex-col border-l border-border rtl:right-auto rtl:left-0 rtl:border-l-0 rtl:border-r rtl:border-border"
             role="dialog"
-            aria-label="Settings & Notifications"
+            aria-label={t("settings.title")}
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">Settings & Notifications</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t("settings.title")}</h2>
               <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
@@ -271,7 +273,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
                 onClick={() => setTab("notifications")}
                 className={`flex-1 py-3 text-sm font-medium ${tab === "notifications" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}
               >
-                Notifications
+                {t("settings.notifications")}
                 {unreadCount > 0 && (
                   <span className="ml-1 text-xs bg-primary text-primary-foreground px-1.5 rounded">
                     {unreadCount}
@@ -283,7 +285,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
                 onClick={() => setTab("theme")}
                 className={`flex-1 py-3 text-sm font-medium ${tab === "theme" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}
               >
-                Theme
+                {t("settings.theme")}
               </button>
             </div>
             <div className="flex-1 overflow-auto p-4">
@@ -347,6 +349,23 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
               )}
               {tab === "theme" && (
                 <div className="space-y-6">
+                  {/* Language */}
+                  {locales.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card p-4">
+                      <p className="text-sm font-medium text-foreground mb-2">{t("settings.language")}</p>
+                      <select
+                        value={locale}
+                        onChange={(e) => setLocale(e.target.value as Parameters<typeof setLocale>[0])}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        {locales.map((l) => (
+                          <option key={l.code} value={l.code}>
+                            {l.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   {/* Nav: Layout as wireframe options */}
                   <div className="rounded-xl border border-border bg-card p-4">
                     <div className="flex items-center gap-2 mb-3">

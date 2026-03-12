@@ -46,6 +46,7 @@ model User {
   role          Role      @default(customer)
   image         String?
   blocked       Boolean   @default(false)
+  locale        String?   @default("en")  // preferred language: en, bn, de, hi, es, fr, it
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

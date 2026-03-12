@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "dashboard": "ড্যাশবোর্ড",
+    "products": "পণ্য",
+    "orders": "অর্ডার",
+    "users": "ব্যবহারকারী",
+    "sellers": "বিক্রেতা",
+    "payments": "পেমেন্ট",
+    "categories": "ক্যাটাগরি",
+    "subcategories": "উপ-ক্যাটাগরি",
+    "brands": "ব্র্যান্ড",
+    "analytics": "বিশ্লেষণ"
+  },
+  "common": {
+    "admin": "অ্যাডমিন",
+    "signOut": "সাইন আউট",
+    "save": "সংরক্ষণ",
+    "cancel": "বাতিল",
+    "delete": "মুছুন",
+    "edit": "সম্পাদনা",
+    "create": "তৈরি করুন"
+  },
+  "settings": {
+    "title": "সেটিংস এবং নোটিফিকেশন",
+    "notifications": "নোটিফিকেশন",
+    "theme": "থিম",
+    "layout": "লেআউট",
+    "direction": "দিক",
+    "density": "ঘনত্ব",
+    "mode": "মোড",
+    "light": "লাইট",
+    "dark": "ডার্ক",
+    "leftToRight": "বাম থেকে ডান",
+    "rightToLeft": "ডান থেকে বাম",
+    "default": "ডিফল্ট",
+    "compact": "কমপ্যাক্ট",
+    "font": "ফন্ট",
+    "family": "পরিবার",
+    "size": "আকার",
+    "color": "রঙ",
+    "integrate": "ইন্টিগ্রেট",
+    "apparent": "আপারেন্ট",
+    "fullScreen": "পূর্ণ স্ক্রীন",
+    "exitFullScreen": "পূর্ণ স্ক্রীন থেকে প্রস্থান",
+    "resetAllSettings": "সমস্ত সেটিংস রিসেট করুন",
+    "language": "ভাষা"
+  }
+}

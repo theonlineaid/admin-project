@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "products": "उत्पाद",
+    "orders": "ऑर्डर",
+    "users": "उपयोगकर्ता",
+    "sellers": "विक्रेता",
+    "payments": "भुगतान",
+    "categories": "श्रेणियाँ",
+    "subcategories": "उपश्रेणियाँ",
+    "brands": "ब्रांड",
+    "analytics": "विश्लेषण"
+  },
+  "common": {
+    "admin": "व्यवस्थापक",
+    "signOut": "साइन आउट",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "create": "बनाएं"
+  },
+  "settings": {
+    "title": "सेटिंग्स और सूचनाएं",
+    "notifications": "सूचनाएं",
+    "theme": "थीम",
+    "layout": "लेआउट",
+    "direction": "दिशा",
+    "density": "घनत्व",
+    "mode": "मोड",
+    "light": "लाइट",
+    "dark": "डार्क",
+    "leftToRight": "बाएं से दाएं",
+    "rightToLeft": "दाएं से बाएं",
+    "default": "डिफ़ॉल्ट",
+    "compact": "कॉम्पैक्ट",
+    "font": "फ़ॉन्ट",
+    "family": "परिवार",
+    "size": "आकार",
+    "color": "रंग",
+    "integrate": "एकीकृत",
+    "apparent": "स्पष्ट",
+    "fullScreen": "पूर्ण स्क्रीन",
+    "exitFullScreen": "पूर्ण स्क्रीन से बाहर निकलें",
+    "resetAllSettings": "सभी सेटिंग्स रीसेट करें",
+    "language": "भाषा"
+  }
+}

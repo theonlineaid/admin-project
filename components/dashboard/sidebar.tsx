@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { getNavForRole } from "@/lib/dashboard-nav";
 import { useDashboardLayout } from "@/components/dashboard/dashboard-layout-context";
+import { useLocale } from "@/components/providers/locale-provider";
 
 export function Sidebar({ role }: { role?: string | null }) {
   const pathname = usePathname();
   const { layoutMode, sidebarCollapsed, setSidebarCollapsed, sidebarNarrow } = useDashboardLayout();
+  const { t } = useLocale();
   const nav = getNavForRole(role);
 
   if (layoutMode === "header") return null;
@@ -31,7 +33,7 @@ export function Sidebar({ role }: { role?: string | null }) {
         {narrow ? (
           layoutMode === "sidebar" ? (
             <div className="flex items-center justify-between w-full px-2">
-              <Link href="/dashboard" className="text-primary font-semibold text-lg" title="Admin">
+              <Link href="/dashboard" className="text-primary font-semibold text-lg" title={t("common.admin")}>
                 A
               </Link>
               <Button
@@ -45,14 +47,14 @@ export function Sidebar({ role }: { role?: string | null }) {
               </Button>
             </div>
           ) : (
-            <Link href="/dashboard" className="text-primary font-semibold text-lg" title="Admin">
+            <Link href="/dashboard" className="text-primary font-semibold text-lg" title={t("common.admin")}>
               A
             </Link>
           )
         ) : (
           <div className="flex items-center justify-between w-full">
             <Link href="/dashboard" className="font-semibold text-primary text-lg">
-              Admin
+              {t("common.admin")}
             </Link>
             {layoutMode === "sidebar" && (
               <Button
@@ -72,11 +74,12 @@ export function Sidebar({ role }: { role?: string | null }) {
         {nav.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const label = t(`nav.${item.key}`);
           return (
             <Link
               key={item.href}
               href={item.href}
-              title={narrow ? item.label : undefined}
+              title={narrow ? label : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 narrow ? "justify-center" : "",
@@ -86,7 +89,7 @@ export function Sidebar({ role }: { role?: string | null }) {
               )}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {!narrow && <span>{item.label}</span>}
+              {!narrow && <span>{label}</span>}
             </Link>
           );
         })}
@@ -99,10 +102,10 @@ export function Sidebar({ role }: { role?: string | null }) {
             narrow ? "justify-center px-0" : "justify-start gap-3"
           )}
           onClick={() => signOut({ callbackUrl: "/login" })}
-          title="Sign out"
+          title={t("common.signOut")}
         >
           <LogOut className="h-5 w-5 shrink-0" />
-          {!narrow && <span>Sign out</span>}
+          {!narrow && <span>{t("common.signOut")}</span>}
         </Button>
       </div>
     </aside>
