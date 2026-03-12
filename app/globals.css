@@ -2,15 +2,18 @@
 
 /* -------------------------------------------------------------------------
    Theme system: 6 themes × light/dark + font scale.
-   Apply: <html data-theme="emerald" class="dark" style="--font-scale: 1">
+   Apply: <html data-theme="emerald" class="dark" style="font-size: 16px">
    ------------------------------------------------------------------------- */
 
+/* Layout uses fixed 16px root so heights/widths don’t change. Only text scales via --user-font-size (12–22). */
 :root {
-  --font-scale: 1;
+  --user-font-size: 16;
 }
-
 html {
-  font-size: calc(16px * var(--font-scale));
+  font-size: 16px;
+}
+body {
+  font-size: calc(var(--user-font-size, 16) * 1px);
 }
 
 /* Theme 1: Emerald (default) */
@@ -176,6 +179,20 @@ html {
   --color-primary-foreground: var(--primary-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Font sizes scale with --user-font-size (12–22) so only text changes, not layout */
+  --font-size-xs: calc(0.75 * var(--user-font-size, 16) * 1px);
+  --font-size-sm: calc(0.875 * var(--user-font-size, 16) * 1px);
+  --font-size-base: calc(var(--user-font-size, 16) * 1px);
+  --font-size-lg: calc(1.125 * var(--user-font-size, 16) * 1px);
+  --font-size-xl: calc(1.25 * var(--user-font-size, 16) * 1px);
+  --font-size-2xl: calc(1.5 * var(--user-font-size, 16) * 1px);
+  --font-size-3xl: calc(1.875 * var(--user-font-size, 16) * 1px);
+  --font-size-4xl: calc(2.25 * var(--user-font-size, 16) * 1px);
+  --font-size-5xl: calc(3 * var(--user-font-size, 16) * 1px);
+  --font-size-6xl: calc(3.75 * var(--user-font-size, 16) * 1px);
+  --font-size-7xl: calc(4.5 * var(--user-font-size, 16) * 1px);
+  --font-size-8xl: calc(6 * var(--user-font-size, 16) * 1px);
+  --font-size-9xl: calc(8 * var(--user-font-size, 16) * 1px);
 }
 
 body {
@@ -183,3 +200,70 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* Font size slider: gradient track (primary left, muted right), step ticks, thumb */
+.font-size-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.font-size-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0%,
+    var(--primary) var(--fill-pct, 50%),
+    var(--muted) var(--fill-pct, 50%),
+    var(--muted) 100%
+  );
+}
+.font-size-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0%,
+    var(--primary) var(--fill-pct, 50%),
+    var(--muted) var(--fill-pct, 50%),
+    var(--muted) 100%
+  );
+}
+.font-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+.font-size-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+/* Force font scaling: override Tailwind so --user-font-size (12–22) actually changes text size (loaded last so it wins) */
+html .text-xs { font-size: calc(0.75 * var(--user-font-size, 16) * 1px) !important; }
+html .text-sm { font-size: calc(0.875 * var(--user-font-size, 16) * 1px) !important; }
+html .text-base { font-size: calc(var(--user-font-size, 16) * 1px) !important; }
+html .text-lg { font-size: calc(1.125 * var(--user-font-size, 16) * 1px) !important; }
+html .text-xl { font-size: calc(1.25 * var(--user-font-size, 16) * 1px) !important; }
+html .text-2xl { font-size: calc(1.5 * var(--user-font-size, 16) * 1px) !important; }
+html .text-3xl { font-size: calc(1.875 * var(--user-font-size, 16) * 1px) !important; }
+html .text-4xl { font-size: calc(2.25 * var(--user-font-size, 16) * 1px) !important; }
+html .text-5xl { font-size: calc(3 * var(--user-font-size, 16) * 1px) !important; }
+html .text-6xl { font-size: calc(3.75 * var(--user-font-size, 16) * 1px) !important; }
+html .text-7xl { font-size: calc(4.5 * var(--user-font-size, 16) * 1px) !important; }
+html .text-8xl { font-size: calc(6 * var(--user-font-size, 16) * 1px) !important; }
+html .text-9xl { font-size: calc(8 * var(--user-font-size, 16) * 1px) !important; }

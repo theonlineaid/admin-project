@@ -11,15 +11,15 @@ export type ThemeId = (typeof THEMES)[number]["id"];
 
 const STORAGE_KEY_THEME = "dashboard-theme";
 const STORAGE_KEY_MODE = "dashboard-mode";
-const STORAGE_KEY_FONT_SCALE = "dashboard-font-scale";
+const STORAGE_KEY_FONT_SIZE = "dashboard-font-size";
 
 export type ThemeMode = "light" | "dark";
 
-/** Font scale factor: 0.875 (small) to 1.25 (large). Default 1. */
-export const FONT_SCALE_MIN = 0.875;
-export const FONT_SCALE_MAX = 1.25;
-export const FONT_SCALE_STEP = 0.0625;
-export const FONT_SCALE_DEFAULT = 1;
+/** Root font size in px: 12 to 22. Default 16. */
+export const FONT_SIZE_MIN = 12;
+export const FONT_SIZE_MAX = 22;
+export const FONT_SIZE_DEFAULT = 16;
+export const FONT_SIZE_STEP = 1;
 
 export function getStoredTheme(): ThemeId {
   if (typeof window === "undefined") return "emerald";
@@ -45,21 +45,21 @@ export function setStoredMode(mode: ThemeMode) {
   localStorage.setItem(STORAGE_KEY_MODE, mode);
 }
 
-export function getStoredFontScale(): number {
-  if (typeof window === "undefined") return FONT_SCALE_DEFAULT;
-  const v = localStorage.getItem(STORAGE_KEY_FONT_SCALE);
-  const n = v ? parseFloat(v) : NaN;
-  if (!Number.isNaN(n) && n >= FONT_SCALE_MIN && n <= FONT_SCALE_MAX) return n;
-  return FONT_SCALE_DEFAULT;
+export function getStoredFontSize(): number {
+  if (typeof window === "undefined") return FONT_SIZE_DEFAULT;
+  const v = localStorage.getItem(STORAGE_KEY_FONT_SIZE);
+  const n = v ? parseInt(v, 10) : NaN;
+  if (!Number.isNaN(n) && n >= FONT_SIZE_MIN && n <= FONT_SIZE_MAX) return n;
+  return FONT_SIZE_DEFAULT;
 }
 
-export function setStoredFontScale(scale: number) {
+export function setStoredFontSize(size: number) {
   if (typeof window === "undefined") return;
-  const clamped = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, scale));
-  localStorage.setItem(STORAGE_KEY_FONT_SCALE, String(clamped));
+  const clamped = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, size));
+  localStorage.setItem(STORAGE_KEY_FONT_SIZE, String(clamped));
 }
 
-export function applyTheme(theme: ThemeId, mode: ThemeMode, fontScale?: number) {
+export function applyTheme(theme: ThemeId, mode: ThemeMode, fontSize?: number) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.setAttribute("data-theme", theme);
@@ -68,6 +68,6 @@ export function applyTheme(theme: ThemeId, mode: ThemeMode, fontScale?: number) 
   } else {
     root.classList.remove("dark");
   }
-  const scale = fontScale ?? (typeof window !== "undefined" ? getStoredFontScale() : FONT_SCALE_DEFAULT);
-  root.style.setProperty("--font-scale", String(scale));
+  const px = fontSize ?? (typeof window !== "undefined" ? getStoredFontSize() : FONT_SIZE_DEFAULT);
+  root.style.setProperty("--user-font-size", String(px));
 }

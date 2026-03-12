@@ -8,14 +8,14 @@ import {
   THEMES,
   getStoredTheme,
   getStoredMode,
-  getStoredFontScale,
+  getStoredFontSize,
   setStoredTheme,
   setStoredMode,
-  setStoredFontScale,
+  setStoredFontSize,
   applyTheme,
-  FONT_SCALE_MIN,
-  FONT_SCALE_MAX,
-  FONT_SCALE_STEP,
+  FONT_SIZE_MIN,
+  FONT_SIZE_MAX,
+  FONT_SIZE_STEP,
   type ThemeId,
   type ThemeMode,
 } from "@/lib/theme";
@@ -38,7 +38,7 @@ export function HeaderDrawer() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [theme, setTheme] = useState<ThemeId>(() => getStoredTheme());
   const [mode, setMode] = useState<ThemeMode>(() => getStoredMode());
-  const [fontScale, setFontScale] = useState<number>(() => getStoredFontScale());
+  const [fontSize, setFontSize] = useState<number>(() => getStoredFontSize());
 
   function loadNotifications() {
     fetch("/api/notifications?limit=30")
@@ -63,19 +63,19 @@ export function HeaderDrawer() {
   function handleThemeChange(newTheme: ThemeId) {
     setTheme(newTheme);
     setStoredTheme(newTheme);
-    applyTheme(newTheme, mode, fontScale);
+    applyTheme(newTheme, mode, fontSize);
   }
 
   function handleModeChange(newMode: ThemeMode) {
     setMode(newMode);
     setStoredMode(newMode);
-    applyTheme(theme, newMode, fontScale);
+    applyTheme(theme, newMode, fontSize);
   }
 
-  function handleFontScaleChange(newScale: number) {
-    const clamped = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, newScale));
-    setFontScale(clamped);
-    setStoredFontScale(clamped);
+  function handleFontSizeChange(newSize: number) {
+    const clamped = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, newSize));
+    setFontSize(clamped);
+    setStoredFontSize(clamped);
     applyTheme(theme, mode, clamped);
   }
 
@@ -256,22 +256,66 @@ export function HeaderDrawer() {
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-2">
-                      Font size
-                      <span className="ml-2 text-muted-foreground font-normal">
-                        {fontScale <= 0.9375 ? "Small" : fontScale <= 1.0625 ? "Medium" : "Large"}
-                      </span>
-                    </p>
-                    <input
-                      type="range"
-                      min={FONT_SCALE_MIN}
-                      max={FONT_SCALE_MAX}
-                      step={FONT_SCALE_STEP}
-                      value={fontScale}
-                      onChange={(e) => handleFontScaleChange(parseFloat(e.target.value))}
-                      className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-muted accent-primary"
-                    />
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <span className="inline-block rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background mb-3">
+                      Font
+                    </span>
+                    <p className="text-sm font-medium text-foreground mb-2">Size</p>
+                    <div className="relative pt-8 pb-1">
+                      <div
+                        className="absolute top-0 pointer-events-none -translate-x-1/2"
+                        style={{
+                          left: `${((fontSize - FONT_SIZE_MIN) / (FONT_SIZE_MAX - FONT_SIZE_MIN)) * 100}%`,
+                        }}
+                      >
+                        <span className="rounded-lg bg-foreground px-2.5 py-1 text-xs font-medium text-background shadow-sm whitespace-nowrap">
+                          {fontSize}px
+                        </span>
+                      </div>
+                      <div
+                        className="px-0.5"
+                        style={
+                          {
+                            "--fill-pct": `${((fontSize - FONT_SIZE_MIN) / (FONT_SIZE_MAX - FONT_SIZE_MIN)) * 100}%`,
+                          } as React.CSSProperties
+                        }
+                      >
+                        <input
+                          type="range"
+                          min={FONT_SIZE_MIN}
+                          max={FONT_SIZE_MAX}
+                          step={FONT_SIZE_STEP}
+                          value={fontSize}
+                          onChange={(e) => handleFontSizeChange(parseInt(e.target.value, 10))}
+                          list="font-size-ticks"
+                          className="font-size-slider w-full"
+                          aria-label="Font size"
+                        />
+                        <datalist id="font-size-ticks">
+                          {Array.from(
+                            { length: FONT_SIZE_MAX - FONT_SIZE_MIN + 1 },
+                            (_, i) => FONT_SIZE_MIN + i
+                          ).map((n) => (
+                            <option key={n} value={n} />
+                          ))}
+                        </datalist>
+                      </div>
+                    </div>
+                    {/* Tick marks: every size 12–22 so 17, 18, etc. are clear */}
+                    <div className="flex justify-between mt-2 px-0.5 text-[10px] text-muted-foreground">
+                      {Array.from(
+                        { length: FONT_SIZE_MAX - FONT_SIZE_MIN + 1 },
+                        (_, i) => FONT_SIZE_MIN + i
+                      ).map((n) => (
+                        <span
+                          key={n}
+                          className={fontSize === n ? "font-semibold text-foreground" : ""}
+                          style={{ minWidth: "1.25rem", textAlign: "center" }}
+                        >
+                          {n}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

@@ -28,7 +28,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('dashboard-theme')||'emerald';var m=localStorage.getItem('dashboard-mode')||'light';var f=parseFloat(localStorage.getItem('dashboard-font-scale'));var s=(!isNaN(f)&&f>=0.875&&f<=1.25)?f:1;document.documentElement.setAttribute('data-theme',t);document.documentElement.style.setProperty('--font-scale',String(s));if(m==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');})();`,
+            __html: `(function(){var t=localStorage.getItem('dashboard-theme')||'emerald';var m=localStorage.getItem('dashboard-mode')||'light';var f=parseInt(localStorage.getItem('dashboard-font-size'),10);var s=(!isNaN(f)&&f>=12&&f<=22)?f:16;document.documentElement.setAttribute('data-theme',t);document.documentElement.style.setProperty('--user-font-size',String(s));if(m==='dark')document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');})();`,
           }}
         />
       </head>
