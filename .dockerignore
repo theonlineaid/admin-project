@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+postgres_data
+
+# Build
+.next
+out
+build
+dist
+
+# Env (compose injects at runtime; keep example for reference)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE / OS
+.DS_Store
+*.pem
+*.log
+.vercel
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Docs / misc
+README.md
+*.md
+coverage
+.idea
+.vscode
+
+# Prisma (we copy prisma/ explicitly; avoid duplicate)
+# (keep prisma folder - we need schema and seed)
