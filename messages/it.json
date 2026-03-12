@@ -21,7 +21,8 @@
     "create": "Crea"
   },
   "settings": {
-    "title": "Impostazioni e notifiche",
+    "title": "Account e impostazioni",
+    "profile": "Profilo",
     "notifications": "Notifiche",
     "theme": "Tema",
     "layout": "Layout",

@@ -21,7 +21,8 @@
     "create": "Crear"
   },
   "settings": {
-    "title": "Ajustes y notificaciones",
+    "title": "Cuenta y ajustes",
+    "profile": "Perfil",
     "notifications": "Notificaciones",
     "theme": "Tema",
     "layout": "Diseño",

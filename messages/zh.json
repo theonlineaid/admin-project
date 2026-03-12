@@ -21,7 +21,8 @@
     "create": "创建"
   },
   "settings": {
-    "title": "设置与通知",
+    "title": "账户与设置",
+    "profile": "个人资料",
     "notifications": "通知",
     "theme": "主题",
     "layout": "布局",

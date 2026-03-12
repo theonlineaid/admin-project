@@ -21,7 +21,8 @@
     "create": "Lumikha"
   },
   "settings": {
-    "title": "Mga Setting at Notification",
+    "title": "Account at Mga Setting",
+    "profile": "Profile",
     "notifications": "Mga Notification",
     "theme": "Tema",
     "layout": "Layout",

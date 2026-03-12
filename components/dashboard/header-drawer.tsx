@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Settings, X, Sun, Moon, Maximize2, Minimize2, RotateCcw, ArrowLeftRight, Layout, CircleHelp, RefreshCw } from "lucide-react";
+import { Bell, User, X, Sun, Moon, Maximize2, Minimize2, RotateCcw, ArrowLeftRight, Layout, CircleHelp, RefreshCw, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   THEMES,
@@ -45,6 +45,7 @@ import { useDashboardLayout } from "@/components/dashboard/dashboard-layout-cont
 import { useLocale } from "@/components/providers/locale-provider";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { signOut } from "next-auth/react";
 
 type Notification = {
   id: string;
@@ -56,12 +57,22 @@ type Notification = {
   createdAt: string;
 };
 
+type CurrentUser = {
+  name: string | null;
+  email: string;
+  role: string;
+  image: string | null;
+  locale?: string | null;
+};
+
 export function HeaderDrawer({ role }: { role?: string | null }) {
   const pathname = usePathname();
   const { layoutMode, setLayoutMode, setSidebarCollapsed } = useDashboardLayout();
   const { t, locale, setLocale, locales } = useLocale();
   const nav = getNavForRole(role);
-  const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [userDrawerOpen, setUserDrawerOpen] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tab, setTab] = useState<"notifications" | "theme">("notifications");
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -84,9 +95,20 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
       .catch(console.error);
   }
 
+  function loadUser() {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setUser({ name: data.name, email: data.email, role: data.role, image: data.image, locale: data.locale }))
+      .catch(() => setUser(null));
+  }
+
   useEffect(() => {
-    if (open) loadNotifications();
-  }, [open]);
+    if (settingsOpen) loadNotifications();
+  }, [settingsOpen]);
+
+  useEffect(() => {
+    if (userDrawerOpen) loadUser();
+  }, [userDrawerOpen]);
 
   useEffect(() => {
     loadNotifications();
@@ -182,9 +204,9 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
     <div className="flex items-center gap-2">
       <button
         type="button"
-        onClick={() => { setOpen(true); setTab("notifications"); }}
+        onClick={() => { setSettingsOpen(true); setTab("notifications"); }}
         className="relative p-2 rounded-lg hover:bg-muted text-foreground"
-        title="Notifications"
+        title={t("settings.notifications")}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -196,12 +218,20 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => { setOpen(true); setTab("theme"); }}
+        onClick={() => { setSettingsOpen(true); setTab("theme"); }}
         className="gap-2"
       >
         <Settings className="h-4 w-4" />
         {t("settings.theme")}
       </Button>
+      <button
+        type="button"
+        onClick={() => setUserDrawerOpen(true)}
+        className="flex items-center justify-center p-2 rounded-lg hover:bg-muted text-foreground border border-border"
+        title={t("settings.profile")}
+      >
+        <User className="h-5 w-5" />
+      </button>
     </div>
   );
 
@@ -250,21 +280,75 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
         )}
       </div>
 
-      {open && (
+      {/* User drawer (profile only) */}
+      {userDrawerOpen && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/50"
-            onClick={() => setOpen(false)}
+            onClick={() => setUserDrawerOpen(false)}
+            aria-hidden
+          />
+          <aside
+            className="fixed top-0 right-0 z-50 w-full max-w-sm h-full bg-card shadow-xl flex flex-col border-l border-border rtl:right-auto rtl:left-0 rtl:border-l-0 rtl:border-r rtl:border-border"
+            role="dialog"
+            aria-label={t("settings.profile")}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-lg font-semibold text-foreground">{t("settings.profile")}</h2>
+              <Button variant="ghost" size="icon" onClick={() => setUserDrawerOpen(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="p-4 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  {user?.image ? (
+                    <img src={user.image} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <User className="h-6 w-6" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">
+                    {user?.name ?? user?.email ?? "—"}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">{user?.email ?? "—"}</p>
+                  {user?.role && (
+                    <p className="mt-0.5 text-xs text-muted-foreground capitalize">{user.role}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <Button
+                variant="outline"
+                className="w-full justify-center gap-2"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+              >
+                <LogOut className="h-4 w-4" />
+                {t("common.signOut")}
+              </Button>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* Settings drawer (notifications + theme) */}
+      {settingsOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setSettingsOpen(false)}
             aria-hidden
           />
           <aside
             className="fixed top-0 right-0 z-50 w-full max-w-md h-full bg-card shadow-xl flex flex-col border-l border-border rtl:right-auto rtl:left-0 rtl:border-l-0 rtl:border-r rtl:border-border"
             role="dialog"
-            aria-label={t("settings.title")}
+            aria-label={t("settings.theme")}
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">{t("settings.title")}</h2>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
+              <h2 className="text-lg font-semibold text-foreground">{t("settings.theme")}</h2>
+              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
             </div>
@@ -311,7 +395,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
                               href={n.link}
                               onClick={() => {
                                 markAsRead(n.id);
-                                setOpen(false);
+                                setSettingsOpen(false);
                               }}
                               className="block"
                             >

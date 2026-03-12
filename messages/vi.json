@@ -21,7 +21,8 @@
     "create": "Tạo"
   },
   "settings": {
-    "title": "Cài đặt & Thông báo",
+    "title": "Tài khoản & Cài đặt",
+    "profile": "Hồ sơ",
     "notifications": "Thông báo",
     "theme": "Giao diện",
     "layout": "Bố cục",

@@ -21,7 +21,8 @@
     "create": "बनाएं"
   },
   "settings": {
-    "title": "सेटिंग्स और सूचनाएं",
+    "title": "खाता और सेटिंग्स",
+    "profile": "प्रोफ़ाइल",
     "notifications": "सूचनाएं",
     "theme": "थीम",
     "layout": "लेआउट",
