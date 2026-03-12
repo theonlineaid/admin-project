@@ -40,13 +40,13 @@ export function PaymentsTable() {
       .catch(console.error);
   }, [page, status]);
 
-  if (!data) return <div className="text-slate-500">Loading...</div>;
+  if (!data) return <div className="text-muted-foreground">Loading...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
         <select
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
         >
@@ -57,7 +57,7 @@ export function PaymentsTable() {
           <option value="refunded">Refunded</option>
         </select>
       </div>
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -75,7 +75,7 @@ export function PaymentsTable() {
                 <TableCell className="font-medium">{row.order.orderNumber}</TableCell>
                 <TableCell>
                   <div className="text-sm">{row.order.user.name}</div>
-                  <div className="text-xs text-slate-500">{row.order.user.email}</div>
+                  <div className="text-xs text-muted-foreground">{row.order.user.email}</div>
                 </TableCell>
                 <TableCell>{formatCurrency(row.amount.toString())}</TableCell>
                 <TableCell>{row.method}</TableCell>

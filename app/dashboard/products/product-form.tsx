@@ -148,7 +148,7 @@ export function ProductForm({
             <Label htmlFor="description">Description</Label>
             <textarea
               id="description"
-              className="flex min-h-[80px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="flex min-h-[80px] w-full rounded-lg border border-border px-3 py-2 text-sm"
               {...register("description")}
             />
           </div>

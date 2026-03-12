@@ -23,7 +23,7 @@ export function DataTablePagination({
 
   return (
     <div className="flex items-center justify-between px-2 py-2">
-      <div className="text-sm text-slate-600">
+      <div className="text-sm text-muted-foreground">
         {start != null && end != null && total != null && (
           <span>
             Showing {start}-{end} of {total}
@@ -40,7 +40,7 @@ export function DataTablePagination({
           <ChevronLeft className="h-4 w-4" />
           Previous
         </Button>
-        <span className="text-sm text-slate-600">
+        <span className="text-sm text-muted-foreground">
           Page {page} of {totalPages || 1}
         </span>
         <Button

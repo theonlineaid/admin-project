@@ -13,7 +13,7 @@ export default async function DashboardLayout({
   const role = (session.user as { role?: string }).role;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background text-foreground">
       <Sidebar role={role} />
       <main className="pl-64">
         <div className="min-h-screen p-6">{children}</div>

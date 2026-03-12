@@ -28,7 +28,7 @@ export function Dropdown({ trigger, children, align = "end", className }: Dropdo
       {open && (
         <div
           className={cn(
-            "absolute z-50 mt-1 min-w-[8rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg",
+            "absolute z-50 mt-1 min-w-[8rem] rounded-lg border border-border bg-card text-card-foreground py-1 shadow-lg",
             align === "end" ? "right-0" : "left-0"
           )}
         >
@@ -49,7 +49,7 @@ export function DropdownItem({
     <button
       type="button"
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100",
+        "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted",
         className
       )}
       onClick={(e) => {

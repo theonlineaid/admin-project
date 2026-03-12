@@ -13,8 +13,8 @@ export default async function AnalyticsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
-        <p className="text-slate-600 mt-1">Last 90 days</p>
+        <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
+        <p className="text-muted-foreground mt-1">Last 90 days</p>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

@@ -42,10 +42,10 @@ export function Sidebar({ role }: { role?: string | null }) {
   const nav = role === "admin" ? adminNav : sellerNav;
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 bg-white">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card">
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center border-b border-slate-200 px-6">
-          <Link href="/dashboard" className="font-semibold text-emerald-600 text-lg">
+        <div className="flex h-16 items-center border-b border-border px-6">
+          <Link href="/dashboard" className="font-semibold text-primary text-lg">
             Admin
           </Link>
         </div>
@@ -59,7 +59,7 @@ export function Sidebar({ role }: { role?: string | null }) {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -68,10 +68,10 @@ export function Sidebar({ role }: { role?: string | null }) {
             );
           })}
         </nav>
-        <div className="border-t border-slate-200 p-4">
+        <div className="border-t border-border p-4">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-slate-600"
+            className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
             onClick={() => signOut({ callbackUrl: "/login" })}
           >
             <LogOut className="h-5 w-5" />

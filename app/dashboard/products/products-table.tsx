@@ -51,13 +51,13 @@ export function ProductsTable() {
     if (res.ok) setData((prev) => prev && { ...prev, data: prev.data.filter((p) => p.id !== id) });
   };
 
-  if (!data) return <div className="text-slate-500">Loading...</div>;
+  if (!data) return <div className="text-muted-foreground">Loading...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search products..."
             value={search}
@@ -66,7 +66,7 @@ export function ProductsTable() {
           />
         </div>
       </div>
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

@@ -26,7 +26,7 @@ export function Dialog({ open, onOpenChange, children, className }: DialogProps)
       />
       <div
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-lg",
+          "relative z-50 w-full max-w-lg rounded-xl border border-border bg-card text-card-foreground p-6 shadow-lg",
           className
         )}
         onClick={(e) => e.stopPropagation()}

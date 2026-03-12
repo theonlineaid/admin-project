@@ -41,7 +41,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">E-commerce Admin</CardTitle>
@@ -78,8 +78,8 @@ function LoginForm() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </Button>
-            <p className="text-xs text-slate-500 text-center mt-4">
-              Default admin: admin@example.com / admin123 — run <code className="bg-slate-200 px-1 rounded">npm run db:seed</code> if login fails.
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              Default admin: admin@example.com / admin123 — run <code className="bg-muted px-1 rounded text-foreground">npm run db:seed</code> if login fails.
             </p>
           </form>
         </CardContent>
@@ -90,7 +90,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-100">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>}>
       <LoginForm />
     </Suspense>
   );

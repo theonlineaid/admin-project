@@ -42,8 +42,8 @@ export default async function CustomerDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{user.name}</h1>
-          <p className="text-slate-600 mt-1">{user.email}</p>
+          <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
+          <p className="text-muted-foreground mt-1">{user.email}</p>
         </div>
         <div className="flex gap-2">
           <Badge variant={user.blocked ? "destructive" : "success"}>
@@ -58,9 +58,9 @@ export default async function CustomerDetailPage({
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p><span className="text-slate-600">Role</span> <Badge variant="secondary">{user.role}</Badge></p>
-          <p><span className="text-slate-600">Total orders</span> {user._count.orders}</p>
-          <p><span className="text-slate-600">Member since</span> {formatDate(user.createdAt)}</p>
+          <p><span className="text-muted-foreground">Role</span> <Badge variant="secondary">{user.role}</Badge></p>
+          <p><span className="text-muted-foreground">Total orders</span> {user._count.orders}</p>
+          <p><span className="text-muted-foreground">Member since</span> {formatDate(user.createdAt)}</p>
         </CardContent>
       </Card>
 
@@ -70,7 +70,7 @@ export default async function CustomerDetailPage({
         </CardHeader>
         <CardContent>
           {user.orders.length === 0 ? (
-            <p className="text-slate-500">No orders yet.</p>
+            <p className="text-muted-foreground">No orders yet.</p>
           ) : (
             <ul className="space-y-2">
               {user.orders.map((order) => (

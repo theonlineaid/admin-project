@@ -37,14 +37,14 @@ export default async function SellerDetailPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{user.name}</h1>
-        <p className="text-slate-600 mt-1">{user.email}</p>
+        <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
+        <p className="text-muted-foreground mt-1">{user.email}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-600">Products</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Products</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{user._count.products}</p>
@@ -52,7 +52,7 @@ export default async function SellerDetailPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-600">Orders (with their products)</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Orders (with their products)</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{user._count.orders}</p>
@@ -60,7 +60,7 @@ export default async function SellerDetailPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-600">Total sales</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total sales</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(Number(totalSales._sum.totalPrice ?? 0))}</p>
@@ -74,7 +74,7 @@ export default async function SellerDetailPage({
         </CardHeader>
         <CardContent>
           {user.products.length === 0 ? (
-            <p className="text-slate-500">No products.</p>
+            <p className="text-muted-foreground">No products.</p>
           ) : (
             <ul className="space-y-2">
               {user.products.map((p) => (
@@ -82,7 +82,7 @@ export default async function SellerDetailPage({
                   <Link href={`/dashboard/products/edit/${p.id}`} className="text-emerald-600 hover:underline">
                     {p.name}
                   </Link>
-                  <span className="text-sm text-slate-600">{p.category.name} · {formatCurrency(p.price.toString())}</span>
+                  <span className="text-sm text-muted-foreground">{p.category.name} · {formatCurrency(p.price.toString())}</span>
                 </li>
               ))}
             </ul>

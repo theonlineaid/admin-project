@@ -87,7 +87,7 @@ export function CategoriesTable() {
           Add category
         </Button>
       </div>
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -135,7 +135,7 @@ export function CategoriesTable() {
           <div className="space-y-2">
             <Label>Description (optional)</Label>
             <textarea
-              className="flex min-h-[80px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="flex min-h-[80px] w-full rounded-lg border border-border px-3 py-2 text-sm"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />

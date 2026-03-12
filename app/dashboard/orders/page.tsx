@@ -4,8 +4,8 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
-        <p className="text-slate-600 mt-1">View and manage orders</p>
+        <h1 className="text-2xl font-bold text-foreground">Orders</h1>
+        <p className="text-muted-foreground mt-1">View and manage orders</p>
       </div>
       <OrdersTable />
     </div>

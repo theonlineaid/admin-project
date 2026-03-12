@@ -36,8 +36,8 @@ export default async function OrderDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Order {order.orderNumber}</h1>
-          <p className="text-slate-600 mt-1">{formatDate(order.createdAt)}</p>
+          <h1 className="text-2xl font-bold text-foreground">Order {order.orderNumber}</h1>
+          <p className="text-muted-foreground mt-1">{formatDate(order.createdAt)}</p>
         </div>
         {role === "admin" && <OrderStatusUpdate orderId={order.id} currentStatus={order.status} />}
       </div>
@@ -49,7 +49,7 @@ export default async function OrderDetailPage({
           </CardHeader>
           <CardContent className="space-y-1">
             <p className="font-medium">{order.user.name}</p>
-            <p className="text-sm text-slate-600">{order.user.email}</p>
+            <p className="text-sm text-muted-foreground">{order.user.email}</p>
           </CardContent>
         </Card>
         <Card>
@@ -58,11 +58,11 @@ export default async function OrderDetailPage({
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-slate-600">Status</span>
+              <span className="text-muted-foreground">Status</span>
               <Badge>{order.status}</Badge>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600">Payment</span>
+              <span className="text-muted-foreground">Payment</span>
               <Badge variant={order.paymentStatus === "completed" ? "success" : "secondary"}>
                 {order.paymentStatus}
               </Badge>

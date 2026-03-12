@@ -87,7 +87,7 @@ export function BrandsTable() {
           Add brand
         </Button>
       </div>
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
