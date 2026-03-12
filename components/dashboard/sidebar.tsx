@@ -22,7 +22,7 @@ const adminNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/products", label: "Products", icon: Package },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/dashboard/customers", label: "Customers", icon: Users },
+  { href: "/dashboard/customers", label: "Users", icon: Users },
   { href: "/dashboard/sellers", label: "Sellers", icon: Store },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
   { href: "/dashboard/categories", label: "Categories", icon: FolderTree },

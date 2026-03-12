@@ -7,6 +7,8 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 import { BlockUserButton } from "./block-user-button";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Pencil, Trash2 } from "lucide-react";
+import { DeleteUserButton } from "./delete-user-button";
 
 export default async function CustomerDetailPage({
   params,
@@ -50,6 +52,13 @@ export default async function CustomerDetailPage({
             {user.blocked ? "Blocked" : "Active"}
           </Badge>
           <BlockUserButton userId={user.id} blocked={user.blocked} />
+          <Link href={`/dashboard/users/edit/${user.id}`}>
+            <Button variant="outline" size="sm">
+              <Pencil className="h-4 w-4 mr-1" />
+              Edit user
+            </Button>
+          </Link>
+          <DeleteUserButton userId={user.id} userName={user.name} />
         </div>
       </div>
 

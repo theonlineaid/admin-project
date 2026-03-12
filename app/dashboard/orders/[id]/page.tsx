@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { OrderStatusUpdate } from "./order-status-update";
+import { DownloadInvoicePdf } from "./download-invoice-pdf";
 
 export default async function OrderDetailPage({
   params,
@@ -32,95 +32,116 @@ export default async function OrderDetailPage({
     if (!hasSellerProduct) notFound();
   }
 
+  const shipping = order.shippingAddress as Record<string, string> | null;
+
+  const orderForPdf = {
+    orderNumber: order.orderNumber,
+    createdAt: order.createdAt.toISOString(),
+    totalPrice: order.totalPrice.toString(),
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    notes: order.notes,
+    user: { name: order.user.name, email: order.user.email },
+    shippingAddress: shipping,
+    items: order.items.map((i) => ({
+      product: { name: i.product.name },
+      quantity: i.quantity,
+      price: i.price.toString(),
+    })),
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Invoice header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Order {order.orderNumber}</h1>
-          <p className="text-muted-foreground mt-1">{formatDate(order.createdAt)}</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">INVOICE</h1>
+          <p className="text-muted-foreground mt-1">#{order.orderNumber}</p>
         </div>
-        {role === "admin" && <OrderStatusUpdate orderId={order.id} currentStatus={order.status} />}
+        <div className="flex items-center gap-3 flex-wrap">
+          <DownloadInvoicePdf order={orderForPdf} />
+          <Badge variant={order.status === "delivered" ? "success" : order.status === "cancelled" ? "destructive" : "secondary"}>
+            {order.status}
+          </Badge>
+          <Badge variant={order.paymentStatus === "completed" ? "success" : "secondary"}>
+            {order.paymentStatus}
+          </Badge>
+          {role === "admin" && <OrderStatusUpdate orderId={order.id} currentStatus={order.status} />}
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <p className="font-medium">{order.user.name}</p>
-            <p className="text-sm text-muted-foreground">{order.user.email}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status</span>
-              <Badge>{order.status}</Badge>
+      {/* Bill to & date */}
+      <div className="grid gap-8 sm:grid-cols-2">
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Bill to
+          </h2>
+          <p className="font-medium text-foreground">{order.user.name}</p>
+          <p className="text-sm text-muted-foreground">{order.user.email}</p>
+          {shipping && (shipping.street || shipping.city) && (
+            <div className="mt-2 text-sm text-muted-foreground">
+              {[shipping.street, shipping.city, shipping.zip, shipping.country]
+                .filter(Boolean)
+                .join(", ")}
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Payment</span>
-              <Badge variant={order.paymentStatus === "completed" ? "success" : "secondary"}>
-                {order.paymentStatus}
-              </Badge>
-            </div>
-            <div className="flex justify-between text-lg font-semibold pt-2">
-              <span>Total</span>
-              <span>{formatCurrency(order.totalPrice.toString())}</span>
-            </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          <p><span className="font-medium text-foreground">Invoice date</span> {formatDate(order.createdAt)}</p>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Items</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="pb-2 font-medium">Product</th>
-                <th className="pb-2 font-medium text-right">Qty</th>
-                <th className="pb-2 font-medium text-right">Price</th>
-                <th className="pb-2 font-medium text-right">Subtotal</th>
+      {/* Line items table */}
+      <div className="rounded-lg border border-border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted border-b border-border">
+              <th className="text-left font-medium text-foreground p-4">Product</th>
+              <th className="text-right font-medium text-foreground p-4 w-20">Qty</th>
+              <th className="text-right font-medium text-foreground p-4 w-28">Unit price</th>
+              <th className="text-right font-medium text-foreground p-4 w-28">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((item) => (
+              <tr key={item.id} className="border-b border-border last:border-0">
+                <td className="p-4 text-foreground">{item.product.name}</td>
+                <td className="p-4 text-right text-foreground">{item.quantity}</td>
+                <td className="p-4 text-right text-foreground">{formatCurrency(item.price.toString())}</td>
+                <td className="p-4 text-right text-foreground font-medium">
+                  {formatCurrency(Number(item.price) * item.quantity)}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {order.items.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-3">{item.product.name}</td>
-                  <td className="text-right">{item.quantity}</td>
-                  <td className="text-right">{formatCurrency(item.price.toString())}</td>
-                  <td className="text-right">
-                    {formatCurrency(Number(item.price) * item.quantity)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+            ))}
+          </tbody>
+        </table>
+        <div className="bg-muted/50 px-4 py-3 flex justify-end">
+          <div className="flex items-center gap-8">
+            <span className="text-muted-foreground">Total</span>
+            <span className="text-xl font-bold text-foreground">{formatCurrency(order.totalPrice.toString())}</span>
+          </div>
+        </div>
+      </div>
+
+      {order.notes && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Notes</h2>
+          <p className="text-sm text-foreground">{order.notes}</p>
+        </div>
+      )}
 
       {order.payments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {order.payments.map((p) => (
-                <li key={p.id} className="flex justify-between text-sm">
-                  <span>{p.method} - {p.status}</span>
-                  <span>{formatCurrency(p.amount.toString())}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <div className="pt-4 border-t border-border">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Payments</h2>
+          <ul className="space-y-2 text-sm">
+            {order.payments.map((p) => (
+              <li key={p.id} className="flex justify-between">
+                <span className="text-muted-foreground">{p.method} – {p.status}</span>
+                <span className="text-foreground font-medium">{formatCurrency(p.amount.toString())}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

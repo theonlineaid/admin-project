@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,9 +16,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { formatDate } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { Search, Pencil, Trash2 } from "lucide-react";
 
 export function CustomersTable() {
+  const router = useRouter();
   const [data, setData] = useState<{
     data: Array<{
       id: string;
@@ -46,6 +48,20 @@ export function CustomersTable() {
       .then(setData)
       .catch(console.error);
   }, [page, search, role]);
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+    const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.refresh();
+      setData((prev) =>
+        prev ? { ...prev, data: prev.data.filter((u) => u.id !== id) } : null
+      );
+    } else {
+      const err = await res.json();
+      alert(err.error || "Failed to delete");
+    }
+  }
 
   if (!data) return <div className="text-muted-foreground">Loading...</div>;
 
@@ -82,7 +98,7 @@ export function CustomersTable() {
               <TableHead>Orders</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
+              <TableHead className="w-[140px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,9 +119,25 @@ export function CustomersTable() {
                 </TableCell>
                 <TableCell>{formatDate(row.createdAt)}</TableCell>
                 <TableCell>
-                  <Link href={`/dashboard/customers/${row.id}`}>
-                    <Button variant="ghost" size="sm">View</Button>
-                  </Link>
+                  <div className="flex items-center gap-1">
+                    <Link href={`/dashboard/customers/${row.id}`}>
+                      <Button variant="ghost" size="sm">View</Button>
+                    </Link>
+                    <Link href={`/dashboard/users/edit/${row.id}`}>
+                      <Button variant="ghost" size="icon" title="Edit">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Delete"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDelete(row.id, row.name)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
