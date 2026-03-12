@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "dashboard": "Bảng điều khiển",
+    "products": "Sản phẩm",
+    "orders": "Đơn hàng",
+    "users": "Người dùng",
+    "sellers": "Người bán",
+    "payments": "Thanh toán",
+    "categories": "Danh mục",
+    "subcategories": "Danh mục con",
+    "brands": "Thương hiệu",
+    "analytics": "Phân tích"
+  },
+  "common": {
+    "admin": "Quản trị",
+    "signOut": "Đăng xuất",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "create": "Tạo"
+  },
+  "settings": {
+    "title": "Cài đặt & Thông báo",
+    "notifications": "Thông báo",
+    "theme": "Giao diện",
+    "layout": "Bố cục",
+    "direction": "Hướng",
+    "density": "Mật độ",
+    "mode": "Chế độ",
+    "light": "Sáng",
+    "dark": "Tối",
+    "leftToRight": "Trái sang phải",
+    "rightToLeft": "Phải sang trái",
+    "default": "Mặc định",
+    "compact": "Thu gọn",
+    "font": "Phông chữ",
+    "family": "Họ",
+    "size": "Kích thước",
+    "color": "Màu",
+    "integrate": "Tích hợp",
+    "apparent": "Rõ ràng",
+    "fullScreen": "Toàn màn hình",
+    "exitFullScreen": "Thoát toàn màn hình",
+    "resetAllSettings": "Đặt lại tất cả",
+    "language": "Ngôn ngữ"
+  }
+}

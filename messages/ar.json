@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "products": "المنتجات",
+    "orders": "الطلبات",
+    "users": "المستخدمون",
+    "sellers": "البائعون",
+    "payments": "المدفوعات",
+    "categories": "الفئات",
+    "subcategories": "الفئات الفرعية",
+    "brands": "العلامات التجارية",
+    "analytics": "التحليلات"
+  },
+  "common": {
+    "admin": "المشرف",
+    "signOut": "تسجيل الخروج",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء"
+  },
+  "settings": {
+    "title": "الإعدادات والإشعارات",
+    "notifications": "الإشعارات",
+    "theme": "المظهر",
+    "layout": "التخطيط",
+    "direction": "الاتجاه",
+    "density": "الكثافة",
+    "mode": "الوضع",
+    "light": "فاتح",
+    "dark": "داكن",
+    "leftToRight": "من اليسار إلى اليمين",
+    "rightToLeft": "من اليمين إلى اليسار",
+    "default": "افتراضي",
+    "compact": "مضغوط",
+    "font": "الخط",
+    "family": "العائلة",
+    "size": "الحجم",
+    "color": "اللون",
+    "integrate": "متكامل",
+    "apparent": "واضح",
+    "fullScreen": "ملء الشاشة",
+    "exitFullScreen": "الخروج من ملء الشاشة",
+    "resetAllSettings": "إعادة تعيين كل الإعدادات",
+    "language": "اللغة"
+  }
+}

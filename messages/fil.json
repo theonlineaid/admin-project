@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "products": "Mga Produkto",
+    "orders": "Mga Order",
+    "users": "Mga User",
+    "sellers": "Mga Nagbebenta",
+    "payments": "Mga Bayad",
+    "categories": "Mga Kategorya",
+    "subcategories": "Mga Subkategorya",
+    "brands": "Mga Brand",
+    "analytics": "Analytics"
+  },
+  "common": {
+    "admin": "Admin",
+    "signOut": "Mag-sign out",
+    "save": "I-save",
+    "cancel": "Kanselahin",
+    "delete": "Tanggalin",
+    "edit": "I-edit",
+    "create": "Lumikha"
+  },
+  "settings": {
+    "title": "Mga Setting at Notification",
+    "notifications": "Mga Notification",
+    "theme": "Tema",
+    "layout": "Layout",
+    "direction": "Direksyon",
+    "density": "Density",
+    "mode": "Mode",
+    "light": "Maliwanag",
+    "dark": "Madilim",
+    "leftToRight": "Kaliwa papuntang kanan",
+    "rightToLeft": "Kanan papuntang kaliwa",
+    "default": "Default",
+    "compact": "Compact",
+    "font": "Font",
+    "family": "Pamilya",
+    "size": "Laki",
+    "color": "Kulay",
+    "integrate": "Isama",
+    "apparent": "Halata",
+    "fullScreen": "Buong screen",
+    "exitFullScreen": "Lumabas sa buong screen",
+    "resetAllSettings": "I-reset lahat",
+    "language": "Wika"
+  }
+}

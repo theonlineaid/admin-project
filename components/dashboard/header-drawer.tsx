@@ -124,6 +124,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
     setDirection("ltr");
     setDensity("default");
     setColorMode("apparent");
+    setLocale("en");
   }
 
   function handleColorModeChange(mode: ColorMode) {

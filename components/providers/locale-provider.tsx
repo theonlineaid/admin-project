@@ -9,6 +9,8 @@ import {
   useState,
 } from "react";
 import type { LocaleCode } from "@/lib/locales";
+import { isRtlLocale } from "@/lib/locales";
+import { setStoredDirection, applyDirection } from "@/lib/theme";
 
 const STORAGE_KEY = "dashboard-locale";
 
@@ -34,7 +36,7 @@ function getNested(obj: unknown, path: string): string | undefined {
   return typeof current === "string" ? current : undefined;
 }
 
-const VALID_CODES: LocaleCode[] = ["en", "bn", "de", "hi", "es", "fr", "it"];
+const VALID_CODES: LocaleCode[] = ["en", "bn", "de", "hi", "es", "fr", "it", "ar", "zh", "vi", "fil"];
 
 function parseStoredLocale(stored: string | null): LocaleCode {
   return stored && VALID_CODES.includes(stored as LocaleCode) ? (stored as LocaleCode) : "en";
@@ -86,9 +88,11 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, [locale, loadTranslations]);
 
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.lang = locale;
-    }
+    if (typeof document === "undefined") return;
+    document.documentElement.lang = locale;
+    const dir = isRtlLocale(locale) ? "rtl" : "ltr";
+    setStoredDirection(dir);
+    applyDirection(dir);
   }, [locale]);
 
   const setLocale = useCallback(
