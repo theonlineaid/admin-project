@@ -27,6 +27,20 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+type AttributeOption = { id: string; value: string; sortOrder: number };
+type AttributeWithOptions = {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+  options: AttributeOption[];
+};
+type ProductAttributeValue = {
+  attributeId: string;
+  attributeOptionId?: string | null;
+  valueText?: string | null;
+};
+
 export function ProductForm({
   product,
 }: {
@@ -43,12 +57,21 @@ export function ProductForm({
     brandId: string | null;
     status: string;
     images: string[];
+    productAttributes?: {
+      attributeId: string;
+      attributeOptionId: string | null;
+      valueText: string | null;
+      attribute: { id: string; name: string; type: string };
+      attributeOption: { id: string; value: string } | null;
+    }[];
   };
 }) {
   const router = useRouter();
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [subcategories, setSubcategories] = useState<{ id: string; name: string; categoryId: string }[]>([]);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
+  const [attributes, setAttributes] = useState<AttributeWithOptions[]>([]);
+  const [productAttributes, setProductAttributes] = useState<ProductAttributeValue[]>([]);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -103,7 +126,52 @@ export function ProductForm({
       .catch(console.error);
   }, []);
 
+  useEffect(() => {
+    fetch("/api/attributes")
+      .then((r) => r.json())
+      .then((list) => {
+        const attrs = Array.isArray(list) ? list : [];
+        setAttributes(attrs);
+        if (product?.productAttributes?.length) {
+          setProductAttributes(
+            product.productAttributes.map((pa) => ({
+              attributeId: pa.attributeId,
+              attributeOptionId: pa.attributeOptionId ?? null,
+              valueText: pa.valueText ?? null,
+            }))
+          );
+        } else if (attrs.length) {
+          setProductAttributes(
+            attrs.map((a: AttributeWithOptions) => ({
+              attributeId: a.id,
+              attributeOptionId: null,
+              valueText: null,
+            }))
+          );
+        }
+      })
+      .catch(console.error);
+  }, [product?.id]);
+
   const filteredSubcategories = subcategories.filter((s) => s.categoryId === categoryId);
+
+  function getAttributeValue(attributeId: string): ProductAttributeValue {
+    return productAttributes.find((pa) => pa.attributeId === attributeId) ?? {
+      attributeId,
+      attributeOptionId: null,
+      valueText: null,
+    };
+  }
+
+  function setAttributeValue(attributeId: string, update: Partial<ProductAttributeValue>) {
+    setProductAttributes((prev) => {
+      const idx = prev.findIndex((pa) => pa.attributeId === attributeId);
+      const next = idx >= 0 ? [...prev] : [...prev, { attributeId, attributeOptionId: null, valueText: null }];
+      const i = idx >= 0 ? idx : next.length - 1;
+      next[i] = { ...next[i], ...update };
+      return next;
+    });
+  }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -137,12 +205,24 @@ export function ProductForm({
   }
 
   async function onSubmit(values: FormValues) {
+    const paPayload = productAttributes
+      .filter(
+        (pa) =>
+          pa.attributeOptionId != null ||
+          (pa.valueText != null && String(pa.valueText).trim() !== "")
+      )
+      .map((pa) => ({
+        attributeId: pa.attributeId,
+        attributeOptionId: pa.attributeOptionId ?? undefined,
+        valueText: pa.valueText?.trim() || undefined,
+      }));
     const payload = {
       ...values,
       compareAtPrice: values.compareAtPrice || undefined,
       subcategoryId: values.subcategoryId || undefined,
       brandId: values.brandId || undefined,
       images,
+      productAttributes: paPayload,
     };
     const url = product ? `/api/products/${product.id}` : "/api/products";
     const method = product ? "PUT" : "POST";
@@ -272,6 +352,66 @@ export function ProductForm({
               <option value="archived">Archived</option>
             </Select>
           </div>
+          {attributes.length > 0 && (
+            <div className="space-y-3">
+              <Label>Attributes (size, weight, etc.)</Label>
+              <p className="text-sm text-muted-foreground">
+                Set optional product attributes. Manage attribute types in Dashboard → Attributes.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {attributes.map((attr) => {
+                  const value = getAttributeValue(attr.id);
+                  return (
+                    <div key={attr.id} className="space-y-2">
+                      <Label className="text-muted-foreground">{attr.name}</Label>
+                      {attr.type === "select" && attr.options?.length ? (
+                        <Select
+                          value={value.attributeOptionId ?? ""}
+                          onChange={(e) =>
+                            setAttributeValue(attr.id, {
+                              attributeOptionId: e.target.value || null,
+                              valueText: null,
+                            })
+                          }
+                        >
+                          <option value="">—</option>
+                          {attr.options.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.value}
+                            </option>
+                          ))}
+                        </Select>
+                      ) : attr.type === "number" ? (
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="e.g. 2.5"
+                          value={value.valueText ?? ""}
+                          onChange={(e) =>
+                            setAttributeValue(attr.id, {
+                              valueText: e.target.value || null,
+                              attributeOptionId: null,
+                            })
+                          }
+                        />
+                      ) : (
+                        <Input
+                          placeholder="e.g. value"
+                          value={value.valueText ?? ""}
+                          onChange={(e) =>
+                            setAttributeValue(attr.id, {
+                              valueText: e.target.value || null,
+                              attributeOptionId: null,
+                            })
+                          }
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Images (upload to Cloudinary)</Label>
             <div className="flex flex-wrap gap-3 items-start">

@@ -13,7 +13,14 @@ export default async function EditProductPage({
   const { id } = await params;
   const product = await prisma.product.findUnique({
     where: { id },
-    include: { category: true, brand: true, subcategory: true },
+    include: {
+      category: true,
+      brand: true,
+      subcategory: true,
+      productAttributes: {
+        include: { attribute: true, attributeOption: true },
+      },
+    },
   });
   if (!product) notFound();
   const role = (session.user as { role?: string }).role;

@@ -164,6 +164,50 @@ model Product {
   brand       Brand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
   seller      User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
+  productAttributes ProductAttribute[]
+}
+
+// Product attributes (e.g. Clothing Size, Sneaker Size, Weight). name/value are default (e.g. en); translations for other locales.
+model Attribute {
+  id                String   @id @default(cuid())
+  name              String   // default language label, e.g. "Clothing Size"
+  nameTranslations  Json?    // { "es": "Talla", "fr": "Taille", ... } – keys: locale code
+  slug              String   @unique
+  type              String   // "select" | "text" | "number" – select uses predefined options
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  options   AttributeOption[]
+  productAttributes ProductAttribute[]
+}
+
+model AttributeOption {
+  id                String   @id @default(cuid())
+  attributeId       String
+  value             String   // default language, e.g. "S", "M", "L"
+  valueTranslations Json?    // { "es": "S", "fr": "S", ... } – optional per-locale label
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  productAttributes ProductAttribute[]
+}
+
+// Value of an attribute for a product (either option id for select, or valueText for text/number)
+model ProductAttribute {
+  id                 String   @id @default(cuid())
+  productId          String
+  attributeId        String
+  attributeOptionId  String?   // for type "select"
+  valueText          String?  @db.Text // for type "text" or "number"
+  createdAt          DateTime @default(now())
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  attributeOption AttributeOption? @relation(fields: [attributeOptionId], references: [id], onDelete: SetNull)
+
+  @@unique([productId, attributeId])
 }
 
 model Order {

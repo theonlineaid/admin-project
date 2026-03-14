@@ -20,6 +20,9 @@ export async function GET(
         subcategory: true,
         brand: true,
         seller: { select: { id: true, name: true, email: true } },
+        productAttributes: {
+          include: { attribute: true, attributeOption: true },
+        },
       },
     });
     if (!product) {
@@ -42,6 +45,12 @@ export async function GET(
   }
 }
 
+const productAttributeSchema = z.object({
+  attributeId: z.string(),
+  attributeOptionId: z.string().optional().nullable(),
+  valueText: z.string().optional().nullable(),
+});
+
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
@@ -54,6 +63,7 @@ const updateSchema = z.object({
   brandId: z.string().optional().nullable(),
   status: z.string().optional(),
   images: z.array(z.string()).optional(),
+  productAttributes: z.array(productAttributeSchema).optional(),
 });
 
 export async function PUT(
@@ -86,13 +96,31 @@ export async function PUT(
       );
     }
 
+    const { productAttributes: paInput, ...updateData } = parsed.data;
+    if (paInput !== undefined) {
+      await prisma.productAttribute.deleteMany({ where: { productId: id } });
+      if (paInput.length > 0) {
+        await prisma.productAttribute.createMany({
+          data: paInput.map((pa) => ({
+            productId: id,
+            attributeId: pa.attributeId,
+            attributeOptionId: pa.attributeOptionId ?? undefined,
+            valueText: pa.valueText ?? undefined,
+          })),
+        });
+      }
+    }
+
     const updated = await prisma.product.update({
       where: { id },
-      data: parsed.data,
+      data: updateData,
       include: {
         category: { select: { id: true, name: true } },
         brand: { select: { id: true, name: true } },
         seller: { select: { id: true, name: true } },
+        productAttributes: {
+          include: { attribute: true, attributeOption: true },
+        },
       },
     });
 

@@ -77,6 +77,12 @@ export async function GET(req: Request) {
   }
 }
 
+const productAttributeSchema = z.object({
+  attributeId: z.string(),
+  attributeOptionId: z.string().optional().nullable(),
+  valueText: z.string().optional().nullable(),
+});
+
 const createSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
@@ -89,6 +95,7 @@ const createSchema = z.object({
   brandId: z.string().optional(),
   status: z.string().default("draft"),
   images: z.array(z.string()).default([]),
+  productAttributes: z.array(productAttributeSchema).optional(),
 });
 
 export async function POST(req: Request) {
@@ -115,16 +122,33 @@ export async function POST(req: Request) {
       "-" +
       Date.now();
 
+    const { productAttributes: paInput, ...productData } = parsed.data;
     const product = await prisma.product.create({
       data: {
-        ...parsed.data,
+        ...productData,
         slug,
         sellerId: userId,
+        productAttributes:
+          paInput?.length
+            ? {
+                create: paInput.map((pa) => ({
+                  attributeId: pa.attributeId,
+                  attributeOptionId: pa.attributeOptionId ?? undefined,
+                  valueText: pa.valueText ?? undefined,
+                })),
+              }
+            : undefined,
       },
       include: {
         category: { select: { id: true, name: true } },
         brand: { select: { id: true, name: true } },
         seller: { select: { id: true, name: true } },
+        productAttributes: {
+          include: {
+            attribute: true,
+            attributeOption: true,
+          },
+        },
       },
     });
 
