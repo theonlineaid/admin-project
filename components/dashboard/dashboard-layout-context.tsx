@@ -30,7 +30,6 @@ export function useDashboardLayout() {
 }
 
 export function DashboardLayoutProvider({
-  role,
   children,
 }: {
   role?: string | null;
@@ -40,8 +39,11 @@ export function DashboardLayoutProvider({
   const [sidebarCollapsed, setSidebarCollapsedState] = useState(false);
 
   useEffect(() => {
-    setLayoutModeState(getStoredLayout());
-    setSidebarCollapsedState(getStoredSidebarCollapsed());
+    const timer = setTimeout(() => {
+      setLayoutModeState(getStoredLayout());
+      setSidebarCollapsedState(getStoredSidebarCollapsed());
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

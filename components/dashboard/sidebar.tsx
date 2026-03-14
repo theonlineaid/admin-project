@@ -12,7 +12,7 @@ import { useLocale } from "@/components/providers/locale-provider";
 
 export function Sidebar({ role }: { role?: string | null }) {
   const pathname = usePathname();
-  const { layoutMode, sidebarCollapsed, setSidebarCollapsed, sidebarNarrow } = useDashboardLayout();
+  const { layoutMode, setSidebarCollapsed, sidebarNarrow } = useDashboardLayout();
   const { t } = useLocale();
   const nav = getNavForRole(role);
 

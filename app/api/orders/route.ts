@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession, requireAdmin, getUserId } from "@/lib/api-utils";
+import { getSession, getUserId } from "@/lib/api-utils";
 import { z } from "zod";
 
 const createOrderSchema = z.object({

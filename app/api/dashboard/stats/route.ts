@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession, requireAdmin, getUserId } from "@/lib/api-utils";
+import { getSession, getUserId } from "@/lib/api-utils";
 import { subDays } from "date-fns";
 
 export async function GET(req: Request) {

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-page-custom-font -- App Router: fonts loaded in root layout, no _document.js */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

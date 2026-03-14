@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable react-hooks/incompatible-library -- React Hook Form watch() used for categoryId filter */
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -79,6 +80,7 @@ export function ProductForm({
         },
   });
 
+  // React Hook Form watch() is not memoizable; acceptable for form-driven subcategory filter
   const categoryId = watch("categoryId");
 
   useEffect(() => {

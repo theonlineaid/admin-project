@@ -72,19 +72,26 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
-  const loadTranslations = useCallback(async (code: LocaleCode) => {
+  const loadTranslations = useCallback(async (code: LocaleCode): Promise<Messages | null> => {
     const res = await fetch(`/api/translations/${code}`);
     const data = await res.json();
-    if (data.messages) setMessages(data.messages);
+    return data.messages ?? null;
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
-    loadTranslations(locale).finally(() => {
-      if (!cancelled) setIsLoading(false);
-    });
-    return () => { cancelled = true; };
+    const timer = setTimeout(() => {
+      setIsLoading(true);
+      loadTranslations(locale).then((messages) => {
+        if (!cancelled && messages) setMessages(messages);
+      }).finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [locale, loadTranslations]);
 
   useEffect(() => {
@@ -101,7 +108,8 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.setItem(STORAGE_KEY, code);
       }
-      await loadTranslations(code);
+      const messages = await loadTranslations(code);
+      if (messages) setMessages(messages);
       try {
         await fetch("/api/me", {
           method: "PATCH",

@@ -7,7 +7,7 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 import { BlockUserButton } from "./block-user-button";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { DeleteUserButton } from "./delete-user-button";
 
 export default async function CustomerDetailPage({

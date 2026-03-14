@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   THEMES,
   FONT_FAMILIES,
-  LAYOUT_MODES,
-  COLOR_MODES,
   getStoredTheme,
   getStoredMode,
   getStoredFontSize,
@@ -303,6 +301,7 @@ export function HeaderDrawer({ role }: { role?: string | null }) {
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-primary/10 text-primary flex items-center justify-center">
                   {user?.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- user avatar from OAuth/external URL
                     <img src={user.image} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <User className="h-6 w-6" />

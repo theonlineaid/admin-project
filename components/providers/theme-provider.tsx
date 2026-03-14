@@ -23,7 +23,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyDirection(getStoredDirection());
     applyDensity(getStoredDensity());
     applyColorMode(getStoredColorMode());
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
