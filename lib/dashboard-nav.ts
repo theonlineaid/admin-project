@@ -9,6 +9,7 @@ import {
   FolderTree,
   Tag,
   BarChart3,
+  Settings,
 } from "lucide-react";
 
 export type NavItem = { href: string; label: string; key: string; icon: LucideIcon };
@@ -24,6 +25,7 @@ export const adminNav: NavItem[] = [
   { href: "/dashboard/subcategories", label: "Subcategories", key: "subcategories", icon: FolderTree },
   { href: "/dashboard/brands", label: "Brands", key: "brands", icon: Tag },
   { href: "/dashboard/analytics", label: "Analytics", key: "analytics", icon: BarChart3 },
+  { href: "/dashboard/settings", label: "Site Settings", key: "settings", icon: Settings },
 ];
 
 export const sellerNav: NavItem[] = [

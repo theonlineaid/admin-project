@@ -9,7 +9,8 @@
     "categories": "分类",
     "subcategories": "子分类",
     "brands": "品牌",
-    "analytics": "分析"
+    "analytics": "分析",
+    "settings": "站点设置"
   },
   "common": {
     "admin": "管理员",

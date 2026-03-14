@@ -208,3 +208,17 @@ model Payment {
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
+
+// Singleton: one row for site-wide settings (logo, favicon, header/footer variant, topbar)
+model SiteSettings {
+  id             String   @id @default(cuid())
+  logoUrl        String?
+  faviconUrl     String?
+  siteTitle      String?  @default("E-commerce")
+  headerVariant  String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
+  footerVariant  String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
+  topbarEnabled  Boolean  @default(false)
+  topbarItems    Json?    // [{ id, type: "phone"|"promotion"|"address"|"custom", value }]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

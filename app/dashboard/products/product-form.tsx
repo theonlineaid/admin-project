@@ -49,6 +49,8 @@ export function ProductForm({
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [subcategories, setSubcategories] = useState<{ id: string; name: string; categoryId: string }[]>([]);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
+  const [images, setImages] = useState<string[]>(product?.images ?? []);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const {
     register,
@@ -103,12 +105,44 @@ export function ProductForm({
 
   const filteredSubcategories = subcategories.filter((s) => s.categoryId === categoryId);
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      formData.set("folder", "products");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = typeof data?.error === "string" ? data.error : res.statusText || "Upload failed";
+        throw new Error(msg);
+      }
+      if (data?.url) {
+        setImages((prev) => [...prev, data.url]);
+      } else {
+        throw new Error("No URL returned from upload");
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
+  }
+
+  function removeImage(url: string) {
+    setImages((prev) => prev.filter((u) => u !== url));
+  }
+
   async function onSubmit(values: FormValues) {
     const payload = {
       ...values,
       compareAtPrice: values.compareAtPrice || undefined,
       subcategoryId: values.subcategoryId || undefined,
       brandId: values.brandId || undefined,
+      images,
     };
     const url = product ? `/api/products/${product.id}` : "/api/products";
     const method = product ? "PUT" : "POST";
@@ -237,6 +271,38 @@ export function ProductForm({
               <option value="active">Active</option>
               <option value="archived">Archived</option>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Images (upload to Cloudinary)</Label>
+            <div className="flex flex-wrap gap-3 items-start">
+              {images.map((url) => (
+                <div key={url} className="relative group">
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-24 w-24 rounded-lg border border-border object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(url)}
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Remove image"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <label className="h-24 w-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-sm text-muted-foreground cursor-pointer hover:bg-muted/50">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                />
+                {uploadingImage ? "Uploading…" : "+ Add"}
+              </label>
+            </div>
           </div>
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={isSubmitting}>
