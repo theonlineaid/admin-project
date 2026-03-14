@@ -219,6 +219,7 @@ model SiteSettings {
   footerVariant  String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
   topbarEnabled  Boolean  @default(false)
   topbarItems    Json?    // [{ id, type: "phone"|"promotion"|"address"|"custom", value }]
+  bannerUrls     Json?    // string[] – 3 to 5 banner image URLs (Cloudinary folder: banner)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

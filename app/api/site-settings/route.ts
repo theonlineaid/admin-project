@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession, requireAdmin } from "@/lib/api-utils";
 import { z } from "zod";
@@ -20,6 +21,7 @@ const updateSchema = z.object({
   footerVariant: z.enum(FOOTER_VARIANTS).optional().nullable(),
   topbarEnabled: z.boolean().optional(),
   topbarItems: z.array(topbarItemSchema).optional().nullable(),
+  bannerUrls: z.array(z.string().url()).min(3).max(5).optional().nullable(),
 });
 
 export async function GET() {
@@ -75,17 +77,20 @@ export async function PATCH(req: Request) {
       });
     }
 
+    const updateData: Prisma.SiteSettingsUpdateInput = {
+      ...(parsed.data.logoUrl !== undefined && { logoUrl: parsed.data.logoUrl }),
+      ...(parsed.data.faviconUrl !== undefined && { faviconUrl: parsed.data.faviconUrl }),
+      ...(parsed.data.siteTitle !== undefined && { siteTitle: parsed.data.siteTitle }),
+      ...(parsed.data.headerVariant !== undefined && { headerVariant: parsed.data.headerVariant }),
+      ...(parsed.data.footerVariant !== undefined && { footerVariant: parsed.data.footerVariant }),
+      ...(parsed.data.topbarEnabled !== undefined && { topbarEnabled: parsed.data.topbarEnabled }),
+      ...(parsed.data.topbarItems !== undefined && { topbarItems: parsed.data.topbarItems as Prisma.InputJsonValue }),
+      ...(parsed.data.bannerUrls !== undefined && { bannerUrls: parsed.data.bannerUrls as Prisma.InputJsonValue }),
+    };
+
     const updated = await prisma.siteSettings.update({
       where: { id: settings.id },
-      data: {
-        ...(parsed.data.logoUrl !== undefined && { logoUrl: parsed.data.logoUrl }),
-        ...(parsed.data.faviconUrl !== undefined && { faviconUrl: parsed.data.faviconUrl }),
-        ...(parsed.data.siteTitle !== undefined && { siteTitle: parsed.data.siteTitle }),
-        ...(parsed.data.headerVariant !== undefined && { headerVariant: parsed.data.headerVariant }),
-        ...(parsed.data.footerVariant !== undefined && { footerVariant: parsed.data.footerVariant }),
-        ...(parsed.data.topbarEnabled !== undefined && { topbarEnabled: parsed.data.topbarEnabled }),
-        ...(parsed.data.topbarItems !== undefined && { topbarItems: parsed.data.topbarItems as object[] }),
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updated);

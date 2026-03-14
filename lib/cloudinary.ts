@@ -3,7 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.LOUDINARY_API_KEY,
+  api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
@@ -63,4 +63,25 @@ export async function uploadImage(
 
     stream.end(file);
   });
+}
+
+/** List image resources in a folder (prefix). For fixed folder mode use prefix e.g. "banner/". */
+export async function listFolderResources(prefix: string): Promise<{ publicId: string; secureUrl: string }[]> {
+  if (!isCloudinaryConfigured()) return [];
+  const result = await cloudinary.api.resources({
+    type: "upload",
+    resource_type: "image",
+    prefix,
+    max_results: 100,
+  });
+  const resources = (result as { resources?: { public_id: string; secure_url: string }[] }).resources ?? [];
+  return resources.map((r) => ({ publicId: r.public_id, secureUrl: r.secure_url }));
+}
+
+/** Delete a single image by public_id. */
+export async function deleteResource(publicId: string, resourceType: "image" | "video" = "image"): Promise<void> {
+  if (!isCloudinaryConfigured()) {
+    throw new Error("Cloudinary is not configured.");
+  }
+  await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 }

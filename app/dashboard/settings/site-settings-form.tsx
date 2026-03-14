@@ -13,6 +13,9 @@ export type TopbarItem = {
   value: string;
 };
 
+const MIN_BANNERS = 3;
+const MAX_BANNERS = 5;
+
 type SiteSettings = {
   id: string;
   logoUrl: string | null;
@@ -22,6 +25,7 @@ type SiteSettings = {
   footerVariant: string | null;
   topbarEnabled: boolean;
   topbarItems: TopbarItem[] | null;
+  bannerUrls: string[] | null;
 };
 
 const TOPBAR_TYPES: { value: TopbarItem["type"]; label: string }[] = [
@@ -73,6 +77,8 @@ export function SiteSettingsForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [bannerFolderImages, setBannerFolderImages] = useState<{ publicId: string; secureUrl: string }[]>([]);
+  const [loadingBannerFolder, setLoadingBannerFolder] = useState(false);
   const [form, setForm] = useState({
     logoUrl: "",
     faviconUrl: "",
@@ -81,6 +87,7 @@ export function SiteSettingsForm() {
     footerVariant: "1",
     topbarEnabled: false,
     topbarItems: [] as TopbarItem[],
+    bannerUrls: [] as string[],
   });
 
   useEffect(() => {
@@ -95,6 +102,7 @@ export function SiteSettingsForm() {
               value: i.value ?? "",
             }))
           : [];
+        const banners = Array.isArray(data.bannerUrls) ? data.bannerUrls : [];
         setForm({
           logoUrl: data.logoUrl ?? "",
           faviconUrl: data.faviconUrl ?? "",
@@ -103,11 +111,29 @@ export function SiteSettingsForm() {
           footerVariant: data.footerVariant ?? "1",
           topbarEnabled: data.topbarEnabled ?? false,
           topbarItems: items,
+          bannerUrls: banners,
         });
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  async function fetchBannerFolderImages() {
+    setLoadingBannerFolder(true);
+    try {
+      const res = await fetch("/api/banner-images");
+      const data = await res.json();
+      setBannerFolderImages(Array.isArray(data.images) ? data.images : []);
+    } catch {
+      setBannerFolderImages([]);
+    } finally {
+      setLoadingBannerFolder(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!loading) fetchBannerFolderImages();
+  }, [loading]);
 
   async function handleFileChange(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -128,6 +154,44 @@ export function SiteSettingsForm() {
     }
   }
 
+  async function handleBannerFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setUploading("banner");
+    try {
+      const folder = "banner";
+      const urls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const url = await uploadFile(files[i], folder);
+        urls.push(url);
+      }
+      setForm((prev) => {
+        const current = prev.bannerUrls;
+        const toAdd = urls.slice(0, Math.max(0, MAX_BANNERS - current.length));
+        const next = [...current, ...toAdd];
+        return { ...prev, bannerUrls: next };
+      });
+      await fetchBannerFolderImages();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(null);
+      e.target.value = "";
+    }
+  }
+
+  async function saveBannerUrls(bannerUrls: string[]) {
+    const payload = bannerUrls.length >= MIN_BANNERS ? bannerUrls : null;
+    const res = await fetch("/api/site-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bannerUrls: payload }),
+    });
+    if (!res.ok) throw new Error("Failed to save");
+    const data = await res.json();
+    setSettings(data);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -143,6 +207,7 @@ export function SiteSettingsForm() {
           footerVariant: form.footerVariant,
           topbarEnabled: form.topbarEnabled,
           topbarItems: form.topbarItems.length ? form.topbarItems : null,
+          bannerUrls: form.bannerUrls.length >= MIN_BANNERS ? form.bannerUrls : null,
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -341,6 +406,88 @@ export function SiteSettingsForm() {
               </label>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Banner settings</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Homepage banner images (3–5 images). Uploaded to Cloudinary folder: <strong>banner</strong>
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            All images in Cloudinary folder <strong>banner</strong>. Delete or upload below. Site uses 3–5 of these (saved order).
+          </p>
+          {loadingBannerFolder ? (
+            <p className="text-sm text-muted-foreground">Loading banner images…</p>
+          ) : (
+            <div className="flex flex-wrap gap-3 items-start">
+              {bannerFolderImages.map((img) => (
+                <div key={img.publicId} className="relative group">
+                  <img
+                    src={img.secureUrl}
+                    alt={img.publicId}
+                    className="h-24 w-40 rounded-lg border border-border object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/banner-images", {
+                          method: "DELETE",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ publicId: img.publicId }),
+                        });
+                        if (!res.ok) {
+                          const data = await res.json();
+                          throw new Error(data.error || "Delete failed");
+                        }
+                        setBannerFolderImages((prev) => prev.filter((i) => i.publicId !== img.publicId));
+                        const prevUrls = form.bannerUrls;
+                        const newUrls = prevUrls.filter((u) => u !== img.secureUrl);
+                        if (newUrls.length !== prevUrls.length) {
+                          setForm((prev) => ({ ...prev, bannerUrls: newUrls }));
+                          await saveBannerUrls(newUrls);
+                        }
+                      } catch (err) {
+                        alert(err instanceof Error ? err.message : "Failed to delete");
+                      }
+                    }}
+                    aria-label="Delete banner"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              <label className="h-24 w-40 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 gap-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={handleBannerFilesChange}
+                  disabled={!!uploading}
+                />
+                {uploading === "banner" ? "Uploading…" : <Plus className="h-6 w-6" />}
+                <span className="text-xs">or select multiple</span>
+              </label>
+            </div>
+          )}
+          {form.bannerUrls.length > 0 && form.bannerUrls.length < MIN_BANNERS && (
+            <p className="text-sm text-amber-600">
+              Add at least {MIN_BANNERS - form.bannerUrls.length} more image(s) to use on site (min {MIN_BANNERS}, max {MAX_BANNERS}).
+            </p>
+          )}
+          {form.bannerUrls.length >= MIN_BANNERS && (
+            <p className="text-sm text-muted-foreground">
+              {form.bannerUrls.length} / {MAX_BANNERS} banners used on site. Order is preserved.
+            </p>
+          )}
         </CardContent>
       </Card>
 
