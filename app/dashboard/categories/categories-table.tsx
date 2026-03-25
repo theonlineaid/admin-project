@@ -14,12 +14,14 @@ import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import { CloudinaryImageField } from "@/components/dashboard/cloudinary-image-field";
 
 type Category = {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  imageUrl: string | null;
   _count: { products: number; subcategories: number };
 };
 
@@ -30,6 +32,7 @@ export function CategoriesTable() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
   function load() {
@@ -46,6 +49,7 @@ export function CategoriesTable() {
     setName("");
     setSlug("");
     setDescription("");
+    setImageUrl("");
     setOpen(true);
   }
 
@@ -54,6 +58,7 @@ export function CategoriesTable() {
     setName(c.name);
     setSlug(c.slug);
     setDescription(c.description ?? "");
+    setImageUrl(c.imageUrl ?? "");
     setOpen(true);
   }
 
@@ -64,7 +69,12 @@ export function CategoriesTable() {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, slug: slug || undefined, description: description || undefined }),
+      body: JSON.stringify({
+        name,
+        slug: slug || undefined,
+        description: description || undefined,
+        imageUrl: imageUrl.trim() || null,
+      }),
     });
     setLoading(false);
     if (res.ok) {
@@ -91,6 +101,7 @@ export function CategoriesTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-14">Image</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Subcategories</TableHead>
@@ -101,6 +112,13 @@ export function CategoriesTable() {
           <TableBody>
             {list.map((row) => (
               <TableRow key={row.id}>
+                <TableCell>
+                  {row.imageUrl ? (
+                    <img src={row.imageUrl} alt="" className="h-10 w-10 rounded-md object-cover border border-border" />
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">{row.name}</TableCell>
                 <TableCell>{row.slug}</TableCell>
                 <TableCell>{row._count.subcategories}</TableCell>
@@ -140,6 +158,13 @@ export function CategoriesTable() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+          <CloudinaryImageField
+            label="Category image"
+            folder="categories"
+            value={imageUrl}
+            onChange={setImageUrl}
+            hint="Uploaded to Cloudinary folder: categories"
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

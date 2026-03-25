@@ -15,12 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import { CloudinaryImageField } from "@/components/dashboard/cloudinary-image-field";
 
 type Subcategory = {
   id: string;
   name: string;
   slug: string;
   categoryId: string;
+  imageUrl: string | null;
   category: { id: string; name: string };
   _count: { products: number };
 };
@@ -35,6 +37,7 @@ export function SubcategoriesTable() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
   function load() {
@@ -55,6 +58,7 @@ export function SubcategoriesTable() {
     setName("");
     setSlug("");
     setCategoryId(categories[0]?.id ?? "");
+    setImageUrl("");
     setOpen(true);
   }
 
@@ -63,6 +67,7 @@ export function SubcategoriesTable() {
     setName(s.name);
     setSlug(s.slug);
     setCategoryId(s.categoryId);
+    setImageUrl(s.imageUrl ?? "");
     setOpen(true);
   }
 
@@ -74,7 +79,12 @@ export function SubcategoriesTable() {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, slug: slug || undefined, categoryId: categoryId || edit?.categoryId }),
+      body: JSON.stringify({
+        name,
+        slug: slug || undefined,
+        categoryId: categoryId || edit?.categoryId,
+        imageUrl: imageUrl.trim() || null,
+      }),
     });
     setLoading(false);
     if (res.ok) {
@@ -101,6 +111,7 @@ export function SubcategoriesTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-14">Image</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Category</TableHead>
@@ -111,6 +122,13 @@ export function SubcategoriesTable() {
           <TableBody>
             {list.map((row) => (
               <TableRow key={row.id}>
+                <TableCell>
+                  {row.imageUrl ? (
+                    <img src={row.imageUrl} alt="" className="h-10 w-10 rounded-md object-cover border border-border" />
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">{row.name}</TableCell>
                 <TableCell>{row.slug}</TableCell>
                 <TableCell>{row.category.name}</TableCell>
@@ -151,6 +169,13 @@ export function SubcategoriesTable() {
             <Label>Slug (optional)</Label>
             <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
           </div>
+          <CloudinaryImageField
+            label="Subcategory image"
+            folder="subcategories"
+            value={imageUrl}
+            onChange={setImageUrl}
+            hint="Uploaded to Cloudinary folder: subcategories"
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

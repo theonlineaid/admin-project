@@ -7,6 +7,10 @@ const createSchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1).optional(),
   description: z.string().optional(),
+  imageUrl: z
+    .union([z.string().url(), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (v === "" || v === null || v === undefined ? undefined : v)),
 });
 
 export async function GET() {
@@ -59,6 +63,7 @@ export async function POST(req: Request) {
         name: parsed.data.name,
         slug,
         description: parsed.data.description,
+        imageUrl: parsed.data.imageUrl ?? undefined,
       },
     });
     return NextResponse.json(category);

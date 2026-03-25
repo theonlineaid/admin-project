@@ -14,6 +14,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import { CloudinaryImageField } from "@/components/dashboard/cloudinary-image-field";
 
 type Brand = {
   id: string;
@@ -64,7 +65,7 @@ export function BrandsTable() {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, slug: slug || undefined, logo: logo || undefined }),
+      body: JSON.stringify({ name, slug: slug || undefined, logo: logo.trim() || null }),
     });
     setLoading(false);
     if (res.ok) {
@@ -91,6 +92,7 @@ export function BrandsTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-14">Logo</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Products</TableHead>
@@ -100,6 +102,13 @@ export function BrandsTable() {
           <TableBody>
             {list.map((row) => (
               <TableRow key={row.id}>
+                <TableCell>
+                  {row.logo ? (
+                    <img src={row.logo} alt="" className="h-10 w-10 rounded-md object-contain border border-border bg-muted/30" />
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">{row.name}</TableCell>
                 <TableCell>{row.slug}</TableCell>
                 <TableCell>{row._count.products}</TableCell>
@@ -130,10 +139,13 @@ export function BrandsTable() {
             <Label>Slug (optional)</Label>
             <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <Label>Logo URL (optional)</Label>
-            <Input value={logo} onChange={(e) => setLogo(e.target.value)} placeholder="https://..." />
-          </div>
+          <CloudinaryImageField
+            label="Brand logo"
+            folder="brands"
+            value={logo}
+            onChange={setLogo}
+            hint="Uploaded to Cloudinary folder: brands"
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

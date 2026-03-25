@@ -111,6 +111,7 @@ model Category {
   name          String
   slug          String   @unique
   description   String?
+  imageUrl      String?  // Cloudinary (folder: categories)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -123,6 +124,7 @@ model Subcategory {
   name       String
   slug       String
   categoryId String
+  imageUrl   String?  // Cloudinary (folder: subcategories)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -133,7 +135,7 @@ model Subcategory {
 model Brand {
   id        String   @id @default(cuid())
   name      String
-  logo      String?
+  logo      String?  // Cloudinary (folder: brands)
   slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

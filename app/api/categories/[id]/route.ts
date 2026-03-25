@@ -7,6 +7,10 @@ const updateSchema = z.object({
   name: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
   description: z.string().optional().nullable(),
+  imageUrl: z
+    .union([z.string().url(), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (v === "" || v === null ? null : v === undefined ? undefined : v)),
 });
 
 export async function PUT(

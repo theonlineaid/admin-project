@@ -5,7 +5,10 @@ import { z } from "zod";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
-  logo: z.string().optional().nullable(),
+  logo: z
+    .union([z.string().url(), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (v === "" || v === null ? null : v === undefined ? undefined : v)),
   slug: z.string().min(1).optional(),
 });
 

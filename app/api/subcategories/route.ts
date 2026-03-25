@@ -7,6 +7,10 @@ const createSchema = z.object({
   name: z.string().min(1),
   categoryId: z.string().min(1),
   slug: z.string().min(1).optional(),
+  imageUrl: z
+    .union([z.string().url(), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (v === "" || v === null || v === undefined ? undefined : v)),
 });
 
 export async function GET(req: Request) {
@@ -65,6 +69,7 @@ export async function POST(req: Request) {
         name: parsed.data.name,
         categoryId: parsed.data.categoryId,
         slug,
+        imageUrl: parsed.data.imageUrl ?? undefined,
       },
       include: { category: { select: { id: true, name: true } } },
     });
