@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, getUserId } from "@/lib/api-utils";
@@ -10,7 +11,7 @@ const createOrderSchema = z.object({
     quantity: z.number().int().min(1),
   })).min(1, "At least one item is required"),
   notes: z.string().optional(),
-  shippingAddress: z.record(z.unknown()).optional(),
+  shippingAddress: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function POST(req: Request) {
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
           status: "pending",
           paymentStatus: "pending",
           notes: parsed.data.notes ?? null,
-          shippingAddress: parsed.data.shippingAddress ?? null,
+          shippingAddress: parsed.data.shippingAddress as Prisma.InputJsonValue | undefined,
         },
       });
       await tx.orderItem.createMany({

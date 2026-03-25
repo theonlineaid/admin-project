@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ColDef } from "ag-grid-community";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { CloudinaryImageField } from "@/components/dashboard/cloudinary-image-field";
+import {
+  DataGrid,
+  GridActionsEditDelete,
+  GridImageCell,
+} from "@/components/dashboard/data-grid";
 
 type Subcategory = {
   id: string;
@@ -29,6 +27,42 @@ type Subcategory = {
 
 type Category = { id: string; name: string };
 
+const subcategoryColumnDefs: ColDef<Subcategory>[] = [
+  {
+    field: "imageUrl",
+    headerName: "Image",
+    cellRenderer: GridImageCell,
+    maxWidth: 100,
+    flex: 0,
+    filter: false,
+    sortable: false,
+  },
+  { field: "name", headerName: "Name" },
+  { field: "slug", headerName: "Slug" },
+  {
+    colId: "categoryName",
+    headerName: "Category",
+    valueGetter: (p) => p.data?.category.name ?? "",
+  },
+  {
+    colId: "products",
+    headerName: "Products",
+    valueGetter: (p) => p.data?._count.products ?? 0,
+    maxWidth: 120,
+    flex: 0,
+  },
+  {
+    colId: "actions",
+    headerName: "",
+    maxWidth: 120,
+    flex: 0,
+    cellRenderer: GridActionsEditDelete,
+    filter: false,
+    sortable: false,
+    pinned: "right",
+  },
+];
+
 export function SubcategoriesTable() {
   const [list, setList] = useState<Subcategory[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -40,7 +74,7 @@ export function SubcategoriesTable() {
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function load() {
+  const load = useCallback(() => {
     fetch("/api/subcategories")
       .then((r) => r.json())
       .then((data) => setList(Array.isArray(data) ? data : []))
@@ -49,9 +83,9 @@ export function SubcategoriesTable() {
       .then((r) => r.json())
       .then((data) => setCategories(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }
+  }, []);
 
-  useEffect(() => load(), []);
+  useEffect(() => load(), [load]);
 
   function openCreate() {
     setEdit(null);
@@ -62,14 +96,33 @@ export function SubcategoriesTable() {
     setOpen(true);
   }
 
-  function openEdit(s: Subcategory) {
+  const openEdit = useCallback((s: Subcategory) => {
     setEdit(s);
     setName(s.name);
     setSlug(s.slug);
     setCategoryId(s.categoryId);
     setImageUrl(s.imageUrl ?? "");
     setOpen(true);
-  }
+  }, []);
+
+  const remove = useCallback(
+    async (id: string) => {
+      if (!confirm("Delete this subcategory?")) return;
+      const res = await fetch(`/api/subcategories/${id}`, { method: "DELETE" });
+      if (res.ok) load();
+    },
+    [load]
+  );
+
+  const gridContext = useMemo(
+    () => ({
+      onEdit: (row: unknown) => openEdit(row as Subcategory),
+      onDelete: (id: string) => {
+        void remove(id);
+      },
+    }),
+    [openEdit, remove]
+  );
 
   async function save() {
     if (!categoryId && !edit) return;
@@ -93,12 +146,6 @@ export function SubcategoriesTable() {
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm("Delete this subcategory?")) return;
-    const res = await fetch(`/api/subcategories/${id}`, { method: "DELETE" });
-    if (res.ok) load();
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -107,45 +154,13 @@ export function SubcategoriesTable() {
           Add subcategory
         </Button>
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-14">Image</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Products</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  {row.imageUrl ? (
-                    <img src={row.imageUrl} alt="" className="h-10 w-10 rounded-md object-cover border border-border" />
-                  ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                <TableCell>{row.slug}</TableCell>
-                <TableCell>{row.category.name}</TableCell>
-                <TableCell>{row._count.products}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(row)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-red-600" onClick={() => remove(row.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <DataGrid<Subcategory>
+        rowData={list}
+        columnDefs={subcategoryColumnDefs}
+        context={gridContext}
+        getRowId={({ data }) => data.id}
+        paginationPageSize={25}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogHeader>
@@ -157,7 +172,9 @@ export function SubcategoriesTable() {
             <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={!!edit}>
               <option value="">Select category</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </Select>
           </div>
@@ -178,8 +195,12 @@ export function SubcategoriesTable() {
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={save} disabled={loading}>Save</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={loading}>
+            Save
+          </Button>
         </DialogFooter>
       </Dialog>
     </div>

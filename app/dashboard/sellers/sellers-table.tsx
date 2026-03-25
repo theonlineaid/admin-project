@@ -1,31 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import type { ColDef } from "ag-grid-community";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { formatDate } from "@/lib/utils";
 import { Search } from "lucide-react";
+import { DataGrid, GridLinkButtonCell } from "@/components/dashboard/data-grid";
+
+type SellerRow = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  _count: { orders: number };
+};
+
+const sellerColumnDefs: ColDef<SellerRow>[] = [
+  { field: "name", headerName: "Name" },
+  { field: "email", headerName: "Email", flex: 1.2 },
+  {
+    colId: "orders",
+    headerName: "Orders",
+    maxWidth: 100,
+    flex: 0,
+    valueGetter: (p) => p.data?._count.orders ?? 0,
+  },
+  {
+    field: "createdAt",
+    headerName: "Joined",
+    maxWidth: 160,
+    flex: 0,
+    valueFormatter: (p) => (p.value ? formatDate(String(p.value)) : ""),
+  },
+  {
+    colId: "view",
+    headerName: "",
+    maxWidth: 90,
+    flex: 0,
+    cellRenderer: GridLinkButtonCell,
+    cellRendererParams: {
+      label: "View",
+      getHref: (row: SellerRow) => `/dashboard/sellers/${row.id}`,
+    },
+    filter: false,
+    sortable: false,
+    pinned: "right",
+  },
+];
 
 export function SellersTable() {
   const [data, setData] = useState<{
-    data: Array<{
-      id: string;
-      name: string;
-      email: string;
-      role: string;
-      createdAt: string;
-      _count: { orders: number };
-    }>;
+    data: SellerRow[];
     total: number;
     page: number;
     limit: number;
@@ -52,45 +79,21 @@ export function SellersTable() {
         <Input
           placeholder="Search sellers..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="pl-9"
         />
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Orders</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.data.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                <TableCell>{row.email}</TableCell>
-                <TableCell>{row._count.orders}</TableCell>
-                <TableCell>{formatDate(row.createdAt)}</TableCell>
-                <TableCell>
-                  <Link href={`/dashboard/sellers/${row.id}`}>
-                    <Button variant="ghost" size="sm">View</Button>
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <DataTablePagination
-          page={data.page}
-          totalPages={data.totalPages}
-          onPageChange={setPage}
-          total={data.total}
-          limit={data.limit}
-        />
-      </div>
+      <DataGrid<SellerRow>
+        rowData={data.data}
+        columnDefs={sellerColumnDefs}
+        getRowId={({ data }) => data.id}
+        pagination={false}
+        height={440}
+      />
+      <DataTablePagination page={data.page} totalPages={data.totalPages} onPageChange={setPage} total={data.total} limit={data.limit} />
     </div>
   );
 }

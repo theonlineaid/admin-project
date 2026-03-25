@@ -1,25 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ColDef } from "ag-grid-community";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { LOCALES } from "@/lib/locales";
+import { DataGrid, GridActionsEditDelete } from "@/components/dashboard/data-grid";
 
 type AttributeOption = {
   id?: string;
@@ -41,6 +30,40 @@ type Attribute = {
 
 type OptionRow = { value: string; valueTranslations: Record<string, string> };
 
+function optionsSummary(row: Attribute | undefined): string {
+  if (!row) return "";
+  if (row.type === "select" && row.options?.length) {
+    return row.options.map((o) => o.value).join(", ");
+  }
+  if (row._count?.productAttributes != null) {
+    return `Used on ${row._count.productAttributes} product(s)`;
+  }
+  return "—";
+}
+
+const attributeColumnDefs: ColDef<Attribute>[] = [
+  { field: "name", headerName: "Name" },
+  { field: "slug", headerName: "Slug" },
+  { field: "type", headerName: "Type", maxWidth: 120, flex: 0 },
+  {
+    colId: "optionsSummary",
+    headerName: "Options / Usage",
+    flex: 2,
+    valueGetter: (p) => optionsSummary(p.data),
+    filterValueGetter: (p) => optionsSummary(p.data),
+  },
+  {
+    colId: "actions",
+    headerName: "",
+    maxWidth: 120,
+    flex: 0,
+    cellRenderer: GridActionsEditDelete,
+    filter: false,
+    sortable: false,
+    pinned: "right",
+  },
+];
+
 export function AttributesTable() {
   const [list, setList] = useState<Attribute[]>([]);
   const [open, setOpen] = useState(false);
@@ -53,14 +76,14 @@ export function AttributesTable() {
   const [showTranslations, setShowTranslations] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  function load() {
+  const load = useCallback(() => {
     fetch("/api/attributes")
       .then((r) => r.json())
       .then((data) => setList(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }
+  }, []);
 
-  useEffect(() => load(), []);
+  useEffect(() => load(), [load]);
 
   function openCreate() {
     setEdit(null);
@@ -73,7 +96,7 @@ export function AttributesTable() {
     setOpen(true);
   }
 
-  function openEdit(a: Attribute) {
+  const openEdit = useCallback((a: Attribute) => {
     setEdit(a);
     setName(a.name);
     setSlug(a.slug);
@@ -89,7 +112,7 @@ export function AttributesTable() {
     setNameTranslations((a.nameTranslations as Record<string, string>) ?? {});
     setShowTranslations(false);
     setOpen(true);
-  }
+  }, []);
 
   function addOption() {
     setOptions((prev) => [...prev, { value: "", valueTranslations: {} }]);
@@ -178,12 +201,25 @@ export function AttributesTable() {
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm("Delete this attribute? Product values for this attribute will be removed.")) return;
-    const res = await fetch(`/api/attributes/${id}`, { method: "DELETE" });
-    if (res.ok) load();
-    else alert("Failed to delete");
-  }
+  const remove = useCallback(
+    async (id: string) => {
+      if (!confirm("Delete this attribute? Product values for this attribute will be removed.")) return;
+      const res = await fetch(`/api/attributes/${id}`, { method: "DELETE" });
+      if (res.ok) load();
+      else alert("Failed to delete");
+    },
+    [load]
+  );
+
+  const gridContext = useMemo(
+    () => ({
+      onEdit: (row: unknown) => openEdit(row as Attribute),
+      onDelete: (id: string) => {
+        void remove(id);
+      },
+    }),
+    [openEdit, remove]
+  );
 
   return (
     <div className="space-y-4">
@@ -193,43 +229,13 @@ export function AttributesTable() {
           Add attribute
         </Button>
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Options / Usage</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                <TableCell>{row.slug}</TableCell>
-                <TableCell>{row.type}</TableCell>
-                <TableCell>
-                  {row.type === "select" && row.options?.length
-                    ? row.options.map((o) => o.value).join(", ")
-                    : row._count?.productAttributes != null
-                    ? `Used on ${row._count.productAttributes} product(s)`
-                    : "—"}
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(row)} aria-label="Edit">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-red-600" onClick={() => remove(row.id)} aria-label="Delete">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <DataGrid<Attribute>
+        rowData={list}
+        columnDefs={attributeColumnDefs}
+        context={gridContext}
+        getRowId={({ data }) => data.id}
+        paginationPageSize={25}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <div className="max-w-md">
@@ -247,11 +253,7 @@ export function AttributesTable() {
             </div>
             <div className="space-y-2">
               <Label>Slug (optional)</Label>
-              <Input
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="auto-generated if empty"
-              />
+              <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="auto-generated if empty" />
             </div>
             <div className="space-y-2">
               <Label>Type</Label>
@@ -303,7 +305,9 @@ export function AttributesTable() {
                   </p>
                   {LOCALES.filter((l) => l.code !== "en").map((loc) => (
                     <div key={loc.code} className="space-y-2 rounded-md border border-border p-3">
-                      <Label className="text-muted-foreground">{loc.name} ({loc.code})</Label>
+                      <Label className="text-muted-foreground">
+                        {loc.name} ({loc.code})
+                      </Label>
                       <Input
                         placeholder={`Attribute name in ${loc.name}`}
                         value={nameTranslations[loc.code] ?? ""}
@@ -317,9 +321,7 @@ export function AttributesTable() {
                                 key={i}
                                 placeholder={`"${opt.value}" in ${loc.name}`}
                                 value={opt.valueTranslations?.[loc.code] ?? ""}
-                                onChange={(e) =>
-                                  setOptionValueTranslation(i, loc.code, e.target.value)
-                                }
+                                onChange={(e) => setOptionValueTranslation(i, loc.code, e.target.value)}
                               />
                             )
                         )}
@@ -330,8 +332,12 @@ export function AttributesTable() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={save} disabled={loading}>
+              {loading ? "Saving..." : "Save"}
+            </Button>
           </DialogFooter>
         </div>
       </Dialog>

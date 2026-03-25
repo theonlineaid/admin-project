@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ColDef } from "ag-grid-community";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { CloudinaryImageField } from "@/components/dashboard/cloudinary-image-field";
+import {
+  DataGrid,
+  GridActionsEditDelete,
+  GridImageCell,
+} from "@/components/dashboard/data-grid";
 
 type Category = {
   id: string;
@@ -24,6 +22,44 @@ type Category = {
   imageUrl: string | null;
   _count: { products: number; subcategories: number };
 };
+
+const categoryColumnDefs: ColDef<Category>[] = [
+  {
+    field: "imageUrl",
+    headerName: "Image",
+    cellRenderer: GridImageCell,
+    maxWidth: 100,
+    flex: 0,
+    filter: false,
+    sortable: false,
+  },
+  { field: "name", headerName: "Name" },
+  { field: "slug", headerName: "Slug" },
+  {
+    colId: "subcategories",
+    headerName: "Subcategories",
+    valueGetter: (p) => p.data?._count.subcategories ?? 0,
+    maxWidth: 140,
+    flex: 0,
+  },
+  {
+    colId: "products",
+    headerName: "Products",
+    valueGetter: (p) => p.data?._count.products ?? 0,
+    maxWidth: 120,
+    flex: 0,
+  },
+  {
+    colId: "actions",
+    headerName: "",
+    maxWidth: 120,
+    flex: 0,
+    cellRenderer: GridActionsEditDelete,
+    filter: false,
+    sortable: false,
+    pinned: "right",
+  },
+];
 
 export function CategoriesTable() {
   const [list, setList] = useState<Category[]>([]);
@@ -35,14 +71,14 @@ export function CategoriesTable() {
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function load() {
+  const load = useCallback(() => {
     fetch("/api/categories")
       .then((r) => r.json())
       .then((data) => setList(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }
+  }, []);
 
-  useEffect(() => load(), []);
+  useEffect(() => load(), [load]);
 
   function openCreate() {
     setEdit(null);
@@ -53,14 +89,33 @@ export function CategoriesTable() {
     setOpen(true);
   }
 
-  function openEdit(c: Category) {
+  const openEdit = useCallback((c: Category) => {
     setEdit(c);
     setName(c.name);
     setSlug(c.slug);
     setDescription(c.description ?? "");
     setImageUrl(c.imageUrl ?? "");
     setOpen(true);
-  }
+  }, []);
+
+  const remove = useCallback(
+    async (id: string) => {
+      if (!confirm("Delete this category?")) return;
+      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+      if (res.ok) load();
+    },
+    [load]
+  );
+
+  const gridContext = useMemo(
+    () => ({
+      onEdit: (row: unknown) => openEdit(row as Category),
+      onDelete: (id: string) => {
+        void remove(id);
+      },
+    }),
+    [openEdit, remove]
+  );
 
   async function save() {
     setLoading(true);
@@ -83,12 +138,6 @@ export function CategoriesTable() {
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm("Delete this category?")) return;
-    const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
-    if (res.ok) load();
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -97,45 +146,13 @@ export function CategoriesTable() {
           Add category
         </Button>
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-14">Image</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Subcategories</TableHead>
-              <TableHead>Products</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  {row.imageUrl ? (
-                    <img src={row.imageUrl} alt="" className="h-10 w-10 rounded-md object-cover border border-border" />
-                  ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                <TableCell>{row.slug}</TableCell>
-                <TableCell>{row._count.subcategories}</TableCell>
-                <TableCell>{row._count.products}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(row)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-red-600" onClick={() => remove(row.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <DataGrid<Category>
+        rowData={list}
+        columnDefs={categoryColumnDefs}
+        context={gridContext}
+        getRowId={({ data }) => data.id}
+        paginationPageSize={25}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogHeader>
@@ -167,8 +184,12 @@ export function CategoriesTable() {
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={loading}>
+            {loading ? "Saving..." : "Save"}
+          </Button>
         </DialogFooter>
       </Dialog>
     </div>

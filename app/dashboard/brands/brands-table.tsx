@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ColDef } from "ag-grid-community";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { CloudinaryImageField } from "@/components/dashboard/cloudinary-image-field";
+import {
+  DataGrid,
+  GridActionsEditDelete,
+  GridImageCell,
+} from "@/components/dashboard/data-grid";
 
 type Brand = {
   id: string;
@@ -23,6 +21,40 @@ type Brand = {
   slug: string;
   _count: { products: number };
 };
+
+const brandColumnDefs: ColDef<Brand>[] = [
+  {
+    field: "logo",
+    headerName: "Logo",
+    cellRenderer: GridImageCell,
+    cellRendererParams: {
+      imgClassName: "h-9 w-9 rounded-md object-contain border border-border bg-muted/30 my-0.5",
+    },
+    maxWidth: 100,
+    flex: 0,
+    filter: false,
+    sortable: false,
+  },
+  { field: "name", headerName: "Name" },
+  { field: "slug", headerName: "Slug" },
+  {
+    colId: "products",
+    headerName: "Products",
+    valueGetter: (p) => p.data?._count.products ?? 0,
+    maxWidth: 120,
+    flex: 0,
+  },
+  {
+    colId: "actions",
+    headerName: "",
+    maxWidth: 120,
+    flex: 0,
+    cellRenderer: GridActionsEditDelete,
+    filter: false,
+    sortable: false,
+    pinned: "right",
+  },
+];
 
 export function BrandsTable() {
   const [list, setList] = useState<Brand[]>([]);
@@ -33,14 +65,14 @@ export function BrandsTable() {
   const [logo, setLogo] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function load() {
+  const load = useCallback(() => {
     fetch("/api/brands")
       .then((r) => r.json())
       .then((data) => setList(Array.isArray(data) ? data : []))
       .catch(console.error);
-  }
+  }, []);
 
-  useEffect(() => load(), []);
+  useEffect(() => load(), [load]);
 
   function openCreate() {
     setEdit(null);
@@ -50,13 +82,32 @@ export function BrandsTable() {
     setOpen(true);
   }
 
-  function openEdit(b: Brand) {
+  const openEdit = useCallback((b: Brand) => {
     setEdit(b);
     setName(b.name);
     setSlug(b.slug);
     setLogo(b.logo ?? "");
     setOpen(true);
-  }
+  }, []);
+
+  const remove = useCallback(
+    async (id: string) => {
+      if (!confirm("Delete this brand?")) return;
+      const res = await fetch(`/api/brands/${id}`, { method: "DELETE" });
+      if (res.ok) load();
+    },
+    [load]
+  );
+
+  const gridContext = useMemo(
+    () => ({
+      onEdit: (row: unknown) => openEdit(row as Brand),
+      onDelete: (id: string) => {
+        void remove(id);
+      },
+    }),
+    [openEdit, remove]
+  );
 
   async function save() {
     setLoading(true);
@@ -74,12 +125,6 @@ export function BrandsTable() {
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm("Delete this brand?")) return;
-    const res = await fetch(`/api/brands/${id}`, { method: "DELETE" });
-    if (res.ok) load();
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -88,43 +133,13 @@ export function BrandsTable() {
           Add brand
         </Button>
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-14">Logo</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Products</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  {row.logo ? (
-                    <img src={row.logo} alt="" className="h-10 w-10 rounded-md object-contain border border-border bg-muted/30" />
-                  ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                <TableCell>{row.slug}</TableCell>
-                <TableCell>{row._count.products}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(row)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-red-600" onClick={() => remove(row.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <DataGrid<Brand>
+        rowData={list}
+        columnDefs={brandColumnDefs}
+        context={gridContext}
+        getRowId={({ data }) => data.id}
+        paginationPageSize={25}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogHeader>
@@ -148,8 +163,12 @@ export function BrandsTable() {
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={save} disabled={loading}>Save</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={loading}>
+            Save
+          </Button>
         </DialogFooter>
       </Dialog>
     </div>

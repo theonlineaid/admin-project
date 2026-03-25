@@ -1,35 +1,83 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ColDef } from "ag-grid-community";
+import type { CustomCellRendererProps } from "ag-grid-react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { formatDate } from "@/lib/utils";
-import { Search, Pencil, Trash2 } from "lucide-react";
+import { Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DataGrid, GridBadgeCell, GridCustomerActionsCell } from "@/components/dashboard/data-grid";
+
+type CustomerRow = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  blocked: boolean;
+  createdAt: string;
+  _count: { orders: number };
+};
+
+function BlockedStatusCell(props: CustomCellRendererProps<CustomerRow>) {
+  if (props.data?.blocked) {
+    return <Badge variant="destructive">Blocked</Badge>;
+  }
+  return <Badge variant="success">Active</Badge>;
+}
+
+const customerColumnDefs: ColDef<CustomerRow>[] = [
+  { field: "name", headerName: "Name" },
+  { field: "email", headerName: "Email", flex: 1.2 },
+  {
+    field: "role",
+    headerName: "Role",
+    maxWidth: 120,
+    flex: 0,
+    cellRenderer: GridBadgeCell,
+    cellRendererParams: { variantMap: {}, fallback: "secondary" as const },
+  },
+  {
+    colId: "orders",
+    headerName: "Orders",
+    maxWidth: 100,
+    flex: 0,
+    valueGetter: (p) => p.data?._count.orders ?? 0,
+  },
+  {
+    colId: "status",
+    headerName: "Status",
+    maxWidth: 120,
+    flex: 0,
+    cellRenderer: BlockedStatusCell,
+    valueGetter: (p) => (p.data?.blocked ? "Blocked" : "Active"),
+    filterValueGetter: (p) => (p.data?.blocked ? "Blocked" : "Active"),
+  },
+  {
+    field: "createdAt",
+    headerName: "Joined",
+    maxWidth: 160,
+    flex: 0,
+    valueFormatter: (p) => (p.value ? formatDate(String(p.value)) : ""),
+  },
+  {
+    colId: "actions",
+    headerName: "Actions",
+    maxWidth: 200,
+    flex: 0,
+    cellRenderer: GridCustomerActionsCell,
+    filter: false,
+    sortable: false,
+    pinned: "right",
+  },
+];
 
 export function CustomersTable() {
   const router = useRouter();
   const [data, setData] = useState<{
-    data: Array<{
-      id: string;
-      name: string;
-      email: string;
-      role: string;
-      blocked: boolean;
-      createdAt: string;
-      _count: { orders: number };
-    }>;
+    data: CustomerRow[];
     total: number;
     page: number;
     limit: number;
@@ -49,19 +97,27 @@ export function CustomersTable() {
       .catch(console.error);
   }, [page, search, role]);
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
-    const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      router.refresh();
-      setData((prev) =>
-        prev ? { ...prev, data: prev.data.filter((u) => u.id !== id) } : null
-      );
-    } else {
-      const err = await res.json();
-      alert(err.error || "Failed to delete");
-    }
-  }
+  const handleDelete = useCallback(
+    async (id: string, name: string) => {
+      if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.refresh();
+        setData((prev) => (prev ? { ...prev, data: prev.data.filter((u) => u.id !== id) } : null));
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to delete");
+      }
+    },
+    [router]
+  );
+
+  const gridContext = useMemo(
+    () => ({
+      onDeleteCustomer: handleDelete,
+    }),
+    [handleDelete]
+  );
 
   if (!data) return <div className="text-muted-foreground">Loading...</div>;
 
@@ -73,14 +129,20 @@ export function CustomersTable() {
           <Input
             placeholder="Search by name or email..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
         <select
           className="rounded-lg border border-border px-3 py-2 text-sm"
           value={role}
-          onChange={(e) => { setRole(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setRole(e.target.value);
+            setPage(1);
+          }}
         >
           <option value="">All roles</option>
           <option value="customer">Customer</option>
@@ -88,69 +150,15 @@ export function CustomersTable() {
           <option value="admin">Admin</option>
         </select>
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Orders</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="w-[140px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.data.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                <TableCell>{row.email}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{row.role}</Badge>
-                </TableCell>
-                <TableCell>{row._count.orders}</TableCell>
-                <TableCell>
-                  {row.blocked ? (
-                    <Badge variant="destructive">Blocked</Badge>
-                  ) : (
-                    <Badge variant="success">Active</Badge>
-                  )}
-                </TableCell>
-                <TableCell>{formatDate(row.createdAt)}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Link href={`/dashboard/customers/${row.id}`}>
-                      <Button variant="ghost" size="sm">View</Button>
-                    </Link>
-                    <Link href={`/dashboard/users/edit/${row.id}`}>
-                      <Button variant="ghost" size="icon" title="Edit">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Delete"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => handleDelete(row.id, row.name)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <DataTablePagination
-          page={data.page}
-          totalPages={data.totalPages}
-          onPageChange={setPage}
-          total={data.total}
-          limit={data.limit}
-        />
-      </div>
+      <DataGrid<CustomerRow>
+        rowData={data.data}
+        columnDefs={customerColumnDefs}
+        context={gridContext}
+        getRowId={({ data }) => data.id}
+        pagination={false}
+        height={440}
+      />
+      <DataTablePagination page={data.page} totalPages={data.totalPages} onPageChange={setPage} total={data.total} limit={data.limit} />
     </div>
   );
 }

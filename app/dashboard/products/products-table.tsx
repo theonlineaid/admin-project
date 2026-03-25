@@ -1,33 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ColDef } from "ag-grid-community";
+import type { CustomCellRendererProps } from "ag-grid-react";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { formatCurrency } from "@/lib/utils";
-import { Pencil, Trash2, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { DataGrid, GridBadgeCell, GridProductActionsCell } from "@/components/dashboard/data-grid";
+
+type ProductRow = {
+  id: string;
+  name: string;
+  price: { toString(): string };
+  stock: number;
+  status: string;
+  category: { name: string };
+  brand: { name: string } | null;
+};
+
+const statusVariantMap = {
+  active: "success" as const,
+  draft: "secondary" as const,
+};
+
+function CategoryNameCell(props: CustomCellRendererProps<ProductRow>) {
+  return <span>{props.data?.category.name ?? ""}</span>;
+}
+
+function BrandNameCell(props: CustomCellRendererProps<ProductRow>) {
+  return <span>{props.data?.brand?.name ?? "—"}</span>;
+}
+
+const productColumnDefs: ColDef<ProductRow>[] = [
+  { field: "name", headerName: "Product", flex: 1.2 },
+  {
+    colId: "category",
+    headerName: "Category",
+    cellRenderer: CategoryNameCell,
+    valueGetter: (p) => p.data?.category.name ?? "",
+  },
+  {
+    colId: "brand",
+    headerName: "Brand",
+    cellRenderer: BrandNameCell,
+    valueGetter: (p) => p.data?.brand?.name ?? "",
+  },
+  {
+    field: "price",
+    headerName: "Price",
+    maxWidth: 120,
+    flex: 0,
+    valueFormatter: (p) => formatCurrency(p.value?.toString?.() ?? String(p.value ?? "")),
+  },
+  { field: "stock", headerName: "Stock", maxWidth: 100, flex: 0 },
+  {
+    field: "status",
+    headerName: "Status",
+    maxWidth: 130,
+    flex: 0,
+    cellRenderer: GridBadgeCell,
+    cellRendererParams: { variantMap: statusVariantMap, fallback: "secondary" },
+  },
+  {
+    colId: "actions",
+    headerName: "",
+    maxWidth: 110,
+    flex: 0,
+    cellRenderer: GridProductActionsCell,
+    filter: false,
+    sortable: false,
+    pinned: "right",
+  },
+];
 
 export function ProductsTable() {
   const [data, setData] = useState<{
-    data: Array<{
-      id: string;
-      name: string;
-      price: { toString(): string };
-      stock: number;
-      status: string;
-      category: { name: string };
-      brand: { name: string } | null;
-    }>;
+    data: ProductRow[];
     total: number;
     page: number;
     limit: number;
@@ -45,11 +94,18 @@ export function ProductsTable() {
       .catch(console.error);
   }, [page, search]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm("Delete this product?")) return;
     const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
     if (res.ok) setData((prev) => prev && { ...prev, data: prev.data.filter((p) => p.id !== id) });
-  };
+  }, []);
+
+  const gridContext = useMemo(
+    () => ({
+      onDeleteProduct: handleDelete,
+    }),
+    [handleDelete]
+  );
 
   if (!data) return <div className="text-muted-foreground">Loading...</div>;
 
@@ -61,66 +117,23 @@ export function ProductsTable() {
           <Input
             placeholder="Search products..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
       </div>
-      <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Brand</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.data.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell className="font-medium">{row.name}</TableCell>
-                <TableCell>{row.category.name}</TableCell>
-                <TableCell>{row.brand?.name ?? "—"}</TableCell>
-                <TableCell>{formatCurrency(row.price.toString())}</TableCell>
-                <TableCell>{row.stock}</TableCell>
-                <TableCell>
-                  <Badge variant={row.status === "active" ? "success" : "secondary"}>
-                    {row.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Link href={`/dashboard/products/edit/${row.id}`}>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => handleDelete(row.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <DataTablePagination
-          page={data.page}
-          totalPages={data.totalPages}
-          onPageChange={setPage}
-          total={data.total}
-          limit={data.limit}
-        />
-      </div>
+      <DataGrid<ProductRow>
+        rowData={data.data}
+        columnDefs={productColumnDefs}
+        context={gridContext}
+        getRowId={({ data }) => data.id}
+        pagination={false}
+        height={440}
+      />
+      <DataTablePagination page={data.page} totalPages={data.totalPages} onPageChange={setPage} total={data.total} limit={data.limit} />
     </div>
   );
 }
