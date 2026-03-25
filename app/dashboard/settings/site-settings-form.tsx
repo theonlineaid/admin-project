@@ -44,11 +44,11 @@ function newTopbarItem(): TopbarItem {
 }
 
 const HEADER_OPTIONS = [
-  { value: "1", label: "Header style 1" },
-  { value: "2", label: "Header style 2" },
-  { value: "3", label: "Header style 3" },
-  { value: "4", label: "Header style 4" },
-  { value: "5", label: "Header style 5" },
+  { value: "1", label: "Classic Marketplace (Amazon-style)" },
+  { value: "2", label: "Two Row Professional" },
+  { value: "3", label: "Mega Menu" },
+  { value: "4", label: "Minimal Modern" },
+  { value: "5", label: "Two Bars (nav + logo/search)" },
 ];
 
 const FOOTER_OPTIONS = [

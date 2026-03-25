@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { listFolderResources } from "@/lib/cloudinary";
 import { BannerCarousel } from "@/components/store/banner-carousel";
 import { ProductCard } from "@/components/store/product-card";
+import { StoreHeader } from "@/components/store/header";
 
 export const metadata = {
   title: "Women's Fashion | Store",
@@ -40,6 +41,7 @@ export default async function StorePage() {
 
   const siteTitle = settings?.siteTitle ?? "Store";
   const logoUrl = settings?.logoUrl ?? null;
+  const headerVariant = settings?.headerVariant ?? "1";
 
   let productsToShow = allProducts;
   if (womenCategory) {
@@ -57,35 +59,11 @@ export default async function StorePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt=""
-                className="h-8 w-auto max-w-[140px] object-contain"
-              />
-            ) : (
-              <span>{siteTitle}</span>
-            )}
-          </Link>
-          <nav className="flex items-center gap-4 text-sm">
-            <Link
-              href="/"
-              className="font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Women
-            </Link>
-            <Link
-              href="/login"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign in
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <StoreHeader
+        variant={headerVariant}
+        siteTitle={siteTitle}
+        logoUrl={logoUrl}
+      />
 
       {bannerUrls.length > 0 && (
         <div className="w-full shrink-0">
