@@ -2,6 +2,8 @@ export type StoreHeaderProps = {
   variant: string;
   siteTitle: string;
   logoUrl: string | null;
+  /** Flat category list for the Amazon-style search bar and nav links. */
+  categories: Category[];
 };
 
 export type Category = {

@@ -19,27 +19,18 @@ const HEADER_VARIANTS: Record<
   "5": HeaderTwoBars,
 };
 
-export function StoreHeader({ variant, siteTitle, logoUrl }: StoreHeaderProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesWithSubs, setCategoriesWithSubs] = useState<CategoryWithSubs[]>([]);
+export function StoreHeader({ variant, siteTitle, logoUrl, categories }: StoreHeaderProps) {
+  const [megaMenuSubs, setMegaMenuSubs] = useState<CategoryWithSubs[]>([]);
 
   useEffect(() => {
-    fetch("/api/store/categories")
+    if (variant !== "3") return;
+    fetch("/api/store/categories/with-subcategories")
       .then((r) => r.json())
-      .then((list) => setCategories(Array.isArray(list) ? list : []))
-      .catch(() => setCategories([]));
-  }, []);
-
-  useEffect(() => {
-    if (variant === "3") {
-      fetch("/api/store/categories/with-subcategories")
-        .then((r) => r.json())
-        .then((list) => setCategoriesWithSubs(Array.isArray(list) ? list : []))
-        .catch(() => setCategoriesWithSubs([]));
-    } else {
-      setCategoriesWithSubs([]);
-    }
+      .then((list) => setMegaMenuSubs(Array.isArray(list) ? list : []))
+      .catch(() => setMegaMenuSubs([]));
   }, [variant]);
+
+  const categoriesWithSubs = variant === "3" ? megaMenuSubs : [];
 
   const HeaderComponent = HEADER_VARIANTS[variant] ?? HEADER_VARIANTS["1"];
   const props = {

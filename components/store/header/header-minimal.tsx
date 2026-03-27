@@ -10,6 +10,7 @@ import { ActionIcons } from "./action-icons";
 export function HeaderMinimal({
   siteTitle,
   logoUrl,
+  categories,
 }: HeaderVariantProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -23,13 +24,13 @@ export function HeaderMinimal({
         </button>
         <Logo siteTitle={siteTitle} logoUrl={logoUrl} className="text-sm" />
         <div className="hidden lg:flex lg:min-w-0 lg:flex-1 lg:max-w-md">
-          <SearchRow />
+          <SearchRow categories={categories} />
         </div>
         <div className="flex flex-1 justify-end lg:flex-initial">
           <ActionIcons />
         </div>
         <div className="lg:hidden flex min-w-0 flex-1 max-w-[120px]">
-          <SearchRow />
+          <SearchRow categories={categories} />
         </div>
       </div>
     </header>

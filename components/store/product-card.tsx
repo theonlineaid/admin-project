@@ -5,8 +5,9 @@ type Product = {
   id: string;
   name: string;
   slug: string;
-  price: { toString(): string };
-  compareAtPrice: { toString(): string } | null;
+  /** Plain string from API / server serialization (Prisma Decimal is converted). */
+  price: string | { toString(): string };
+  compareAtPrice: string | { toString(): string } | null;
   images: string[];
   category?: { name: string };
   brand?: { name: string } | null;

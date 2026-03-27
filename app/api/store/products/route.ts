@@ -35,9 +35,12 @@ export async function GET(req: Request) {
       if (cat) where.categoryId = cat.id;
     }
     if (search?.trim()) {
+      const q = search.trim();
       where.OR = [
-        { name: { contains: search.trim(), mode: "insensitive" } },
-        { description: { contains: search.trim(), mode: "insensitive" } },
+        { name: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+        { sku: { contains: q, mode: "insensitive" } },
+        { category: { name: { contains: q, mode: "insensitive" } } },
       ];
     }
 

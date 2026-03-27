@@ -2,11 +2,12 @@ import { StoreHomeShell } from "@/components/store/store-home-shell";
 import { getStoreHomePageData } from "@/lib/store-home-data";
 
 export const metadata = {
-  title: "Women's Fashion | Store",
-  description: "Discover women's fashion and latest trends.",
+  title: "Store | Browse",
+  description: "Search and shop by category — alternate storefront layout.",
 };
 
-export default async function StorePage({
+/** Alternate storefront home: same data and filters as `/`, centered hero + card layout. */
+export default async function StoreIndex1Page({
   searchParams,
 }: {
   searchParams: Promise<{ search?: string; categorySlug?: string }>;
@@ -16,5 +17,5 @@ export default async function StorePage({
     search: sp.search,
     categorySlug: sp.categorySlug,
   });
-  return <StoreHomeShell data={data} layout="default" />;
+  return <StoreHomeShell data={data} layout="index1" />;
 }

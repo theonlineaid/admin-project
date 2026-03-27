@@ -22,7 +22,7 @@ export function HeaderMegaMenu({
       <div className="container mx-auto flex flex-col px-4">
         <div className="flex items-center gap-4 py-2">
           <Logo siteTitle={siteTitle} logoUrl={logoUrl} />
-          <SearchRow />
+          <SearchRow categories={categories} />
           <ActionIcons className="shrink-0" />
         </div>
         <nav className="flex items-center gap-1 border-t border-border">
@@ -39,7 +39,7 @@ export function HeaderMegaMenu({
                 {categoriesWithSubs.map((cat) => (
                   <div key={cat.id} className="px-3 py-1">
                     <Link
-                      href={`/?category=${cat.slug}`}
+                      href={`/?categorySlug=${cat.slug}`}
                       className="font-medium text-foreground hover:text-primary block py-1"
                     >
                       {cat.name}
@@ -49,7 +49,7 @@ export function HeaderMegaMenu({
                         {cat.subcategories.map((sub) => (
                           <Link
                             key={sub.id}
-                            href={`/?category=${cat.slug}&sub=${sub.slug}`}
+                            href={`/?categorySlug=${cat.slug}&sub=${sub.slug}`}
                             className="block text-sm text-muted-foreground hover:text-foreground py-0.5"
                           >
                             {sub.name}
@@ -65,7 +65,7 @@ export function HeaderMegaMenu({
           {categories.map((c) => (
             <Link
               key={c.id}
-              href={`/?category=${c.slug}`}
+              href={`/?categorySlug=${c.slug}`}
               className="px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-t"
             >
               {c.name}

@@ -10,6 +10,7 @@ import { ActionIcons } from "./action-icons";
 export function HeaderTwoBars({
   siteTitle,
   logoUrl,
+  categories,
 }: HeaderVariantProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -31,7 +32,7 @@ export function HeaderTwoBars({
       </div>
       <div className="container mx-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
         <Logo siteTitle={siteTitle} logoUrl={logoUrl} />
-        <SearchRow />
+        <SearchRow categories={categories} />
         <ActionIcons className="shrink-0" />
       </div>
     </header>
