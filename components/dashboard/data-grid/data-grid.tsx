@@ -63,6 +63,7 @@ export function DataGrid<TData = unknown>({
       style={{ height: domLayout === "autoHeight" ? "auto" : heightStyle, minHeight: domLayout === "autoHeight" ? 120 : undefined }}
     >
       <AgGridReact<TData>
+        theme="legacy"
         rowData={rowData}
         columnDefs={columnDefs}
         defaultColDef={defaultColDef}

@@ -109,6 +109,7 @@ html[data-density="compact"] .dashboard-ag-grid.ag-theme-quartz {
 
 .dashboard-ag-grid.ag-theme-quartz .ag-cell {
   line-height: 1.4;
+  place-content: center;
 }
 
 .dashboard-ag-grid.ag-theme-quartz .ag-paging-panel {
