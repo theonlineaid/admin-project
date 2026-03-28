@@ -204,27 +204,32 @@ export default async function ShopPage({
                   ))}
                 </ul>
               </div>
-
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">Sort</h2>
-                <Suspense
-                  fallback={
-                    <div className="mt-1 h-10 rounded-md bg-muted/50" aria-hidden />
-                  }
-                >
-                  <ShopSortSelect />
-                </Suspense>
-              </div>
             </aside>
 
             <div className="min-w-0 flex-1">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <ShopGridColumnPicker value={shopGridColumns} className="mb-0" />
+                <Suspense
+                  fallback={
+                    <div
+                      className="h-10 w-full max-w-[14rem] rounded-md bg-muted/50 sm:ml-auto"
+                      aria-hidden
+                    />
+                  }
+                >
+                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                    <span className="text-sm font-medium text-muted-foreground">Sort</span>
+                    <ShopSortSelect className="min-w-0 flex-1 sm:w-auto sm:min-w-[12rem]" />
+                  </div>
+                </Suspense>
+              </div>
+
               {products.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground">
                   No products match your filters. Try adjusting category, brand, or search.
                 </p>
               ) : (
                 <>
-                  <ShopGridColumnPicker value={shopGridColumns} />
                   <div
                     className="grid grid-cols-2 gap-4 sm:gap-6 lg:[grid-template-columns:repeat(var(--shop-cols),minmax(0,1fr))]"
                     style={shopGridStyle}

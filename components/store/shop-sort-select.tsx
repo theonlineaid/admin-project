@@ -2,8 +2,9 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { shopHref } from "@/lib/shop-url";
+import { cn } from "@/lib/utils";
 
-export function ShopSortSelect() {
+export function ShopSortSelect({ className }: { className?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -17,7 +18,10 @@ export function ShopSortSelect() {
     <select
       id="shop-sort"
       aria-label="Sort products"
-      className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm"
+      className={cn(
+        "rounded-md border border-border bg-background px-2 py-2 text-sm",
+        className ?? "w-full",
+      )}
       value={value}
       onChange={(e) => {
         const sort = e.target.value;
