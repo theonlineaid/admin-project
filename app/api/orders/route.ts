@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, getUserId } from "@/lib/api-utils";
+import { formatOrderItemVariantSummary } from "@/lib/storefront-product-attributes";
 import { z } from "zod";
 
 const createOrderSchema = z.object({
@@ -48,7 +49,24 @@ export async function POST(req: Request) {
     const productIds = [...new Set(parsed.data.items.map((i) => i.productId))];
     const products = await prisma.product.findMany({
       where: { id: { in: productIds }, status: "active" },
-      select: { id: true, name: true, price: true, stock: true, sellerId: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        stock: true,
+        sellerId: true,
+        productAttributes: {
+          orderBy: { attribute: { sortOrder: "asc" } },
+          include: {
+            attribute: {
+              select: { name: true, nameTranslations: true, type: true },
+            },
+            attributeOption: {
+              select: { value: true, valueTranslations: true },
+            },
+          },
+        },
+      },
     });
     const productMap = new Map(products.map((p) => [p.id, p]));
 
@@ -64,7 +82,12 @@ export async function POST(req: Request) {
 
     const orderNumber = `INV-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let totalPrice = 0;
-    const orderItems: { productId: string; quantity: number; price: number }[] = [];
+    const orderItems: {
+      productId: string;
+      quantity: number;
+      price: number;
+      variantSummary: string | null;
+    }[] = [];
 
     for (const item of parsed.data.items) {
       const product = productMap.get(item.productId);
@@ -75,7 +98,12 @@ export async function POST(req: Request) {
         );
       }
       const price = Number(product.price);
-      orderItems.push({ productId: product.id, quantity: item.quantity, price });
+      orderItems.push({
+        productId: product.id,
+        quantity: item.quantity,
+        price,
+        variantSummary: formatOrderItemVariantSummary(product),
+      });
       totalPrice += price * item.quantity;
     }
 
@@ -97,6 +125,7 @@ export async function POST(req: Request) {
           productId: i.productId,
           quantity: i.quantity,
           price: i.price,
+          variantSummary: i.variantSummary,
         })),
       });
       const admins = await tx.user.findMany({

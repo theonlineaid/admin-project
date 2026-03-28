@@ -19,6 +19,7 @@ export type OrderForPdf = {
     product: { name: string };
     quantity: number;
     price: string;
+    variantSummary?: string | null;
   }>;
 };
 
@@ -82,8 +83,12 @@ export function DownloadInvoicePdf({ order }: { order: OrderForPdf }) {
       const tableBody = order.items.map((item) => {
         const price = parseFloat(item.price);
         const amount = price * item.quantity;
+        const productCell =
+          item.variantSummary && item.variantSummary.trim() !== ""
+            ? `${item.product.name}\n${item.variantSummary}`
+            : item.product.name;
         return [
-          item.product.name,
+          productCell,
           String(item.quantity),
           formatCurrency(price),
           formatCurrency(amount),

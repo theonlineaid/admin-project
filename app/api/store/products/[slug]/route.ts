@@ -13,6 +13,38 @@ export async function GET(
       include: {
         category: { select: { id: true, name: true, slug: true } },
         brand: { select: { id: true, name: true } },
+        productAttributes: {
+          orderBy: { attribute: { sortOrder: "asc" } },
+          include: {
+            attribute: {
+              select: {
+                id: true,
+                name: true,
+                nameTranslations: true,
+                type: true,
+                slug: true,
+                sortOrder: true,
+                options: {
+                  orderBy: { sortOrder: "asc" },
+                  select: {
+                    id: true,
+                    value: true,
+                    valueTranslations: true,
+                    sortOrder: true,
+                  },
+                },
+              },
+            },
+            attributeOption: {
+              select: {
+                id: true,
+                value: true,
+                valueTranslations: true,
+                sortOrder: true,
+              },
+            },
+          },
+        },
       },
     });
     if (!product) {

@@ -47,6 +47,7 @@ export default async function OrderDetailPage({
       product: { name: i.product.name },
       quantity: i.quantity,
       price: i.price.toString(),
+      variantSummary: i.variantSummary,
     })),
   };
 
@@ -105,7 +106,14 @@ export default async function OrderDetailPage({
           <tbody>
             {order.items.map((item) => (
               <tr key={item.id} className="border-b border-border last:border-0">
-                <td className="p-4 text-foreground">{item.product.name}</td>
+                <td className="p-4 text-foreground">
+                  <div className="font-medium">{item.product.name}</div>
+                  {item.variantSummary ? (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {item.variantSummary}
+                    </div>
+                  ) : null}
+                </td>
                 <td className="p-4 text-right text-foreground">{item.quantity}</td>
                 <td className="p-4 text-right text-foreground">{formatCurrency(item.price.toString())}</td>
                 <td className="p-4 text-right text-foreground font-medium">

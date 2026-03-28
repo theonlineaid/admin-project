@@ -2,6 +2,34 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import {
+  buildProductSelectAttributeGroups,
+  buildStorefrontAttributeRows,
+} from "@/lib/storefront-product-attributes";
+import { ProductDetailAttributes } from "@/components/store/product-detail-attributes";
+import { ProductSelectAttributes } from "@/components/store/product-select-attributes";
+
+const productAttributeInclude = {
+  orderBy: { attribute: { sortOrder: "asc" as const } },
+  include: {
+    attribute: {
+      select: {
+        id: true,
+        name: true,
+        nameTranslations: true,
+        type: true,
+        sortOrder: true,
+        options: {
+          orderBy: { sortOrder: "asc" as const },
+          select: { id: true, value: true, valueTranslations: true },
+        },
+      },
+    },
+    attributeOption: {
+      select: { id: true, value: true, valueTranslations: true },
+    },
+  },
+} as const;
 
 export default async function ProductPage({
   params,
@@ -14,16 +42,47 @@ export default async function ProductPage({
     include: {
       category: { select: { id: true, name: true, slug: true } },
       brand: { select: { id: true, name: true } },
+      productAttributes: productAttributeInclude,
     },
   });
 
   if (!product) notFound();
+
+  const selectAttrIds = product.productAttributes
+    .filter((pa) => pa.attribute.type === "select")
+    .map((pa) => pa.attribute.id);
+
+  const siblings =
+    selectAttrIds.length > 0
+      ? await prisma.product.findMany({
+          where: {
+            status: "active",
+            categoryId: product.categoryId,
+            name: product.name,
+            id: { not: product.id },
+          },
+          select: {
+            slug: true,
+            productAttributes: {
+              where: { attributeId: { in: selectAttrIds } },
+              select: { attributeId: true, attributeOptionId: true },
+            },
+          },
+        })
+      : [];
+
+  const selectGroups = buildProductSelectAttributeGroups({
+    currentSlug: product.slug,
+    productAttributes: product.productAttributes,
+    siblings,
+  });
 
   const price = parseFloat(product.price.toString());
   const compareAt = product.compareAtPrice
     ? parseFloat(product.compareAtPrice.toString())
     : null;
   const imageUrl = product.images?.[0] ?? null;
+  const attributeRows = buildStorefrontAttributeRows(product.productAttributes);
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,14 +128,19 @@ export default async function ProductPage({
                 </span>
               )}
             </div>
+
+            <ProductSelectAttributes groups={selectGroups} />
+
             {product.description && (
-              <div className="mt-6 text-muted-foreground">
+              <div className="mt-6 text-muted-foreground lg:mt-8">
                 <h2 className="text-sm font-medium text-foreground">Description</h2>
                 <p className="mt-2 whitespace-pre-wrap">{product.description}</p>
               </div>
             )}
           </div>
         </div>
+
+        <ProductDetailAttributes items={attributeRows} />
       </main>
     </div>
   );
