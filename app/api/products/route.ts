@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, requireSellerOrAdmin, getUserId } from "@/lib/api-utils";
+import {
+  expandProductAttributeInput,
+  productAttributeInputSchema,
+} from "@/lib/product-attribute-input";
 import { z } from "zod";
 
 const querySchema = z.object({
@@ -77,12 +81,6 @@ export async function GET(req: Request) {
   }
 }
 
-const productAttributeSchema = z.object({
-  attributeId: z.string(),
-  attributeOptionId: z.string().optional().nullable(),
-  valueText: z.string().optional().nullable(),
-});
-
 const createSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
@@ -95,7 +93,7 @@ const createSchema = z.object({
   brandId: z.string().optional(),
   status: z.string().default("draft"),
   images: z.array(z.string()).default([]),
-  productAttributes: z.array(productAttributeSchema).optional(),
+  productAttributes: z.array(productAttributeInputSchema).optional(),
 });
 
 export async function POST(req: Request) {
@@ -123,24 +121,22 @@ export async function POST(req: Request) {
       Date.now();
 
     const { productAttributes: paInput, ...productData } = parsed.data;
+    const expandedAttrs =
+      paInput?.length && paInput.length > 0
+        ? await expandProductAttributeInput(prisma, paInput)
+        : [];
     const product = await prisma.product.create({
       data: {
         ...productData,
         slug,
         sellerId: userId,
         productAttributes:
-          paInput?.length
+          expandedAttrs.length > 0
             ? {
-                create: paInput.map((pa) => ({
+                create: expandedAttrs.map((pa) => ({
                   attributeId: pa.attributeId,
-                  attributeOptionId:
-                    pa.attributeOptionId != null && pa.attributeOptionId !== ""
-                      ? pa.attributeOptionId
-                      : null,
-                  valueText:
-                    pa.valueText != null && String(pa.valueText).trim() !== ""
-                      ? String(pa.valueText).trim()
-                      : null,
+                  attributeOptionId: pa.attributeOptionId,
+                  valueText: pa.valueText,
                 })),
               }
             : undefined,

@@ -12,7 +12,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ProductAttributeInput } from "@/lib/product-attribute-input";
 import { cn, slugify } from "@/lib/utils";
+
+function CopyIdButton({ id, noun }: { id: string; noun: string }) {
+  const [ok, setOk] = useState(false);
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-6 shrink-0 px-1.5 text-[10px]"
+      onClick={() => {
+        void navigator.clipboard.writeText(id).then(
+          () => {
+            setOk(true);
+            setTimeout(() => setOk(false), 1200);
+          },
+          () => {
+            alert(`Could not copy. ${noun} id:\n${id}`);
+          },
+        );
+      }}
+    >
+      {ok ? "Copied" : "Copy"}
+    </Button>
+  );
+}
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -249,28 +275,38 @@ export function ProductForm({
   }
 
   async function onSubmit(values: FormValues) {
-    const paPayload: {
-      attributeId: string;
-      attributeOptionId: string | null;
-      valueText: string | null;
-    }[] = [];
+    const paPayload: ProductAttributeInput[] = [];
     for (const row of productAttributes) {
       const attr = attributes.find((a) => a.id === row.attributeId);
       const typeNorm = String(attr?.type ?? "")
         .toLowerCase()
         .trim();
+      const options = Array.isArray(attr?.options) ? attr.options : [];
       if (typeNorm === "select") {
-        for (const oid of row.selectedOptionIds) {
+        const allIds = options.map((o) => o.id);
+        const allSelected =
+          allIds.length > 0 &&
+          allIds.every((oid) => row.selectedOptionIds.includes(oid));
+        if (allSelected) {
           paPayload.push({
             attributeId: row.attributeId,
-            attributeOptionId: oid,
-            valueText: null,
+            allOptions: true,
+            attributeOptionId: undefined,
+            valueText: undefined,
           });
+        } else {
+          for (const oid of row.selectedOptionIds) {
+            paPayload.push({
+              attributeId: row.attributeId,
+              attributeOptionId: oid,
+              valueText: undefined,
+            });
+          }
         }
       } else if (row.valueText != null && String(row.valueText).trim() !== "") {
         paPayload.push({
           attributeId: row.attributeId,
-          attributeOptionId: null,
+          attributeOptionId: undefined,
           valueText: String(row.valueText).trim(),
         });
       }
@@ -420,8 +456,12 @@ export function ProductForm({
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                For select attributes, check every value this product offers (e.g. all sizes S–XXL). To show more
-                rows here, add more attributes in{" "}
+                Each block lists the catalog attribute id (copy for APIs). For selects, use Whole attribute to attach
+                every option id at once, or tick individual values. JSON body can send{" "}
+                <code className="rounded bg-muted px-1 text-xs">
+                  {`{ "attributeId": "<id>", "allOptions": true }`}
+                </code>
+                . Add more rows in{" "}
                 <Link
                   href="/dashboard/attributes"
                   className="font-medium text-primary underline-offset-4 hover:underline"
@@ -442,21 +482,31 @@ export function ProductForm({
                   const staleIds = value.selectedOptionIds.filter((id) => !optionIdSet.has(id));
                   return (
                     <div key={attr.id} className="space-y-2">
-                      <Label className="text-muted-foreground">
-                        {attr.name}
-                        {attr.slug && attr.slug !== slugify(attr.name) ? (
-                          <span className="ml-1 font-normal text-muted-foreground/80">
-                            ({attr.slug})
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">
+                          {attr.name}
+                          {attr.slug && attr.slug !== slugify(attr.name) ? (
+                            <span className="ml-1 font-normal text-muted-foreground/80">
+                              ({attr.slug})
+                            </span>
+                          ) : null}
+                        </Label>
+                        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
+                          <span className="font-mono break-all">
+                            id: {attr.id}
                           </span>
-                        ) : null}
-                      </Label>
+                          <CopyIdButton id={attr.id} noun="Attribute" />
+                          <span className="hidden sm:inline">·</span>
+                          <span className="font-mono">key: {attr.slug}</span>
+                        </div>
+                      </div>
                       {typeNorm === "select" ? (
                         <div className="space-y-2">
                           {options.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               <Button
                                 type="button"
-                                variant="outline"
+                                variant="default"
                                 size="sm"
                                 className="h-8 text-xs"
                                 onClick={() =>
@@ -466,7 +516,7 @@ export function ProductForm({
                                   )
                                 }
                               >
-                                Select all
+                                Whole attribute (all option IDs)
                               </Button>
                               <Button
                                 type="button"
@@ -475,7 +525,7 @@ export function ProductForm({
                                 className="h-8 text-xs"
                                 onClick={() => clearSelectOptions(attr.id)}
                               >
-                                Clear
+                                Clear selection
                               </Button>
                             </div>
                           )}
@@ -493,20 +543,29 @@ export function ProductForm({
                               {options.map((opt) => (
                                 <label
                                   key={opt.id}
+                                  title={`Option id: ${opt.id}`}
                                   className={cn(
-                                    "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
+                                    "flex min-w-[6rem] cursor-pointer flex-col gap-0.5 rounded-md border px-2 py-2 text-sm transition-colors sm:min-w-0 sm:flex-row sm:items-center sm:gap-2 sm:px-3",
                                     selected.has(opt.id)
                                       ? "border-primary bg-primary/10"
                                       : "border-border hover:bg-muted/60",
                                   )}
                                 >
-                                  <input
-                                    type="checkbox"
-                                    className="size-4 rounded border-border"
-                                    checked={selected.has(opt.id)}
-                                    onChange={() => toggleSelectOption(attr.id, opt.id)}
-                                  />
-                                  <span>{opt.value}</span>
+                                  <span className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      className="size-4 shrink-0 rounded border-border"
+                                      checked={selected.has(opt.id)}
+                                      onChange={() => toggleSelectOption(attr.id, opt.id)}
+                                    />
+                                    <span>{opt.value}</span>
+                                  </span>
+                                  <span className="flex items-center gap-1 pl-6 font-mono text-[10px] text-muted-foreground sm:pl-0">
+                                    <span className="max-w-[140px] truncate" title={opt.id}>
+                                      {opt.id}
+                                    </span>
+                                    <CopyIdButton id={opt.id} noun="Option" />
+                                  </span>
                                 </label>
                               ))}
                             </div>

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, requireSellerOrAdmin, getUserId } from "@/lib/api-utils";
+import {
+  expandProductAttributeInput,
+  productAttributeInputSchema,
+} from "@/lib/product-attribute-input";
 import { z } from "zod";
 
 export async function GET(
@@ -45,12 +49,6 @@ export async function GET(
   }
 }
 
-const productAttributeSchema = z.object({
-  attributeId: z.string(),
-  attributeOptionId: z.string().optional().nullable(),
-  valueText: z.string().optional().nullable(),
-});
-
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
@@ -63,7 +61,7 @@ const updateSchema = z.object({
   brandId: z.string().optional().nullable(),
   status: z.string().optional(),
   images: z.array(z.string()).optional(),
-  productAttributes: z.array(productAttributeSchema).optional(),
+  productAttributes: z.array(productAttributeInputSchema).optional(),
 });
 
 export async function PUT(
@@ -99,19 +97,15 @@ export async function PUT(
     const { productAttributes: paInput, ...updateData } = parsed.data;
     if (paInput !== undefined) {
       await prisma.productAttribute.deleteMany({ where: { productId: id } });
-      if (paInput.length > 0) {
+      const expanded =
+        paInput.length > 0 ? await expandProductAttributeInput(prisma, paInput) : [];
+      if (expanded.length > 0) {
         await prisma.productAttribute.createMany({
-          data: paInput.map((pa) => ({
+          data: expanded.map((pa) => ({
             productId: id,
             attributeId: pa.attributeId,
-            attributeOptionId:
-              pa.attributeOptionId != null && pa.attributeOptionId !== ""
-                ? pa.attributeOptionId
-                : null,
-            valueText:
-              pa.valueText != null && String(pa.valueText).trim() !== ""
-                ? String(pa.valueText).trim()
-                : null,
+            attributeOptionId: pa.attributeOptionId,
+            valueText: pa.valueText,
           })),
         });
       }
