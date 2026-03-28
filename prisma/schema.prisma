@@ -55,6 +55,21 @@ model User {
   accounts      Account[]
   sessions      Session[]
   notifications Notification[]
+  storeRecentSearches StoreRecentSearch[]
+}
+
+/// Storefront search history (logged-in: userId; guest: visitorId cookie).
+model StoreRecentSearch {
+  id         String   @id @default(cuid())
+  userId     String?
+  visitorId  String?
+  term       String   @db.VarChar(200)
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([visitorId, createdAt(sort: Desc)])
 }
 
 model Account {

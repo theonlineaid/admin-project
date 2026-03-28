@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function StoreProductSearchBar({
@@ -48,7 +48,8 @@ export function StoreProductSearchBar({
           aria-hidden
         />
         <Input
-          type="search"
+          type="text"
+          role="searchbox"
           placeholder={
             categoryId
               ? "Search in this category…"
@@ -56,8 +57,21 @@ export function StoreProductSearchBar({
           }
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="h-10 min-h-10 w-full rounded-none border-0 bg-transparent pl-9 pr-3 text-sm shadow-none sm:h-11 sm:min-h-11 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className={cn(
+            "h-10 min-h-10 w-full rounded-none border-0 bg-transparent pl-9 text-sm shadow-none sm:h-11 sm:min-h-11 focus-visible:ring-0 focus-visible:ring-offset-0",
+            search.trim().length > 0 ? "pr-10" : "pr-3"
+          )}
         />
+        {search.trim().length > 0 && (
+          <button
+            type="button"
+            onClick={() => onSearchChange("")}
+            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Clear search"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        )}
       </div>
     </div>
   );

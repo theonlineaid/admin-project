@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { buildStorefrontProductWhere } from "@/lib/storefront-products";
 
 const querySchema = z.object({
   q: z.string().min(1).max(120),
@@ -19,15 +20,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ suggestions: [] });
     }
     const { q, categoryId } = parsed.data;
-
-    const where: Record<string, unknown> = { status: "active" };
-    if (categoryId) where.categoryId = categoryId;
     const term = q.trim();
-    where.OR = [
-      { name: { contains: term, mode: "insensitive" } },
-      { description: { contains: term, mode: "insensitive" } },
-      { sku: { contains: term, mode: "insensitive" } },
-    ];
+    const where = await buildStorefrontProductWhere({
+      search: term,
+      categoryId,
+    });
 
     const products = await prisma.product.findMany({
       where,

@@ -1,6 +1,10 @@
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { listFolderResources } from "@/lib/cloudinary";
+import {
+  fetchStorefrontProducts,
+  serializeStorefrontProductForJson,
+  storefrontProductInclude,
+} from "@/lib/storefront-products";
 
 export type StoreHomeCategory = {
   id: string;
@@ -19,35 +23,6 @@ export type StoreHomeProduct = {
   category: { id: string; name: string; slug: string };
   brand: { id: string; name: string } | null;
 };
-
-type ProductRowDb = {
-  id: string;
-  name: string;
-  slug: string;
-  price: { toString(): string };
-  compareAtPrice: { toString(): string } | null;
-  images: string[];
-  category: { id: string; name: string; slug: string };
-  brand: { id: string; name: string } | null;
-};
-
-function serializeStoreProduct(p: ProductRowDb): StoreHomeProduct {
-  return {
-    id: p.id,
-    name: p.name,
-    slug: p.slug,
-    price: p.price.toString(),
-    compareAtPrice: p.compareAtPrice != null ? p.compareAtPrice.toString() : null,
-    images: [...p.images],
-    category: { ...p.category },
-    brand: p.brand ? { ...p.brand } : null,
-  };
-}
-
-const productInclude = {
-  category: { select: { id: true, name: true, slug: true } },
-  brand: { select: { id: true, name: true } },
-} as const;
 
 export type StoreHomePageData = {
   bannerUrls: string[];
@@ -97,33 +72,12 @@ export async function getStoreHomePageData(filters?: StoreHomeFilters): Promise<
   const categorySlug = filters?.categorySlug?.trim();
 
   if (search || categorySlug) {
-    const where: Prisma.ProductWhereInput = { status: "active" };
-    if (categorySlug) {
-      const cat = await prisma.category.findUnique({
-        where: { slug: categorySlug },
-        select: { id: true },
-      });
-      if (cat) where.categoryId = cat.id;
-    }
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
-        { category: { name: { contains: search, mode: "insensitive" } } },
-      ];
-    }
-
-    const [productsToShow, initialTotal] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        take: 12,
-        skip: 0,
-        orderBy: { createdAt: "desc" },
-        include: productInclude,
-      }),
-      prisma.product.count({ where }),
-    ]);
+    const { rows, total } = await fetchStorefrontProducts({
+      page: 1,
+      limit: 12,
+      search,
+      categorySlug,
+    });
 
     let initialCategoryId = "";
     if (categorySlug) {
@@ -131,7 +85,7 @@ export async function getStoreHomePageData(filters?: StoreHomeFilters): Promise<
       if (c) initialCategoryId = c.id;
     }
 
-    const initialTotalPages = Math.max(1, Math.ceil(initialTotal / 12));
+    const initialTotalPages = Math.max(1, Math.ceil(total / 12));
     const filtersKey = `q:${search ?? ""}|c:${categorySlug ?? ""}`;
 
     return {
@@ -139,12 +93,12 @@ export async function getStoreHomePageData(filters?: StoreHomeFilters): Promise<
       siteTitle,
       logoUrl,
       headerVariant,
-      initialProducts: productsToShow.map(serializeStoreProduct),
+      initialProducts: rows.map(serializeStorefrontProductForJson),
       categories,
       initialCategoryId,
       initialSearchQuery: search ?? "",
       filtersKey,
-      initialTotal,
+      initialTotal: total,
       initialTotalPages,
     };
   }
@@ -158,10 +112,10 @@ export async function getStoreHomePageData(filters?: StoreHomeFilters): Promise<
     where: { status: "active" },
     take: 12,
     orderBy: { createdAt: "desc" },
-    include: productInclude,
+    include: storefrontProductInclude,
   });
 
-  let productsToShow: ProductRowDb[] = allProducts;
+  let productsToShow = allProducts;
   let initialCategoryId = "";
   const countWhere: { status: "active"; categoryId?: string } = { status: "active" };
 
@@ -170,7 +124,7 @@ export async function getStoreHomePageData(filters?: StoreHomeFilters): Promise<
       where: { status: "active", categoryId: womenCategory.id },
       take: 12,
       orderBy: { createdAt: "desc" },
-      include: productInclude,
+      include: storefrontProductInclude,
     });
     if (womenProducts.length > 0) {
       productsToShow = womenProducts;
@@ -187,7 +141,7 @@ export async function getStoreHomePageData(filters?: StoreHomeFilters): Promise<
     siteTitle,
     logoUrl,
     headerVariant,
-    initialProducts: productsToShow.map(serializeStoreProduct),
+    initialProducts: productsToShow.map(serializeStorefrontProductForJson),
     categories,
     initialCategoryId,
     initialSearchQuery: "",

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import {
+  fetchStorefrontProducts,
+  serializeStorefrontProductForJson,
+} from "@/lib/storefront-products";
 
 const querySchema = z.object({
   page: z.coerce.number().min(1).default(1),
@@ -10,7 +13,7 @@ const querySchema = z.object({
   categorySlug: z.string().optional(),
 });
 
-/** Public API: list active products for storefront. Optional filter by categoryId or categorySlug (e.g. "women"). */
+/** Public API: list active products for storefront. Filtering rules live in `@/lib/storefront-products`. */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -25,51 +28,23 @@ export async function GET(req: Request) {
       ? parsed.data
       : { page: 1, limit: 12, search: undefined, categoryId: undefined, categorySlug: undefined };
 
-    const where: Record<string, unknown> = { status: "active" };
-    if (categoryId) where.categoryId = categoryId;
-    if (categorySlug) {
-      const cat = await prisma.category.findUnique({
-        where: { slug: categorySlug },
-        select: { id: true },
-      });
-      if (cat) where.categoryId = cat.id;
-    }
-    if (search?.trim()) {
-      const q = search.trim();
-      where.OR = [
-        { name: { contains: q, mode: "insensitive" } },
-        { description: { contains: q, mode: "insensitive" } },
-        { sku: { contains: q, mode: "insensitive" } },
-        { category: { name: { contains: q, mode: "insensitive" } } },
-      ];
-    }
-
-    const [data, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-          category: { select: { id: true, name: true, slug: true } },
-          brand: { select: { id: true, name: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.product.count({ where }),
-    ]);
+    const { rows, total } = await fetchStorefrontProducts({
+      page,
+      limit,
+      search,
+      categoryId,
+      categorySlug,
+    });
 
     return NextResponse.json({
-      data,
+      data: rows.map(serializeStorefrontProductForJson),
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     });
   } catch (e) {
     console.error(e);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }
