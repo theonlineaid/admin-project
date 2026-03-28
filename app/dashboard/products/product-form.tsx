@@ -66,6 +66,8 @@ type AttributeWithOptions = {
 };
 type ProductAttributeValue = {
   attributeId: string;
+  /** When false, this catalog attribute is not stored on the product (e.g. colour-only — turn off Size). */
+  useOnProduct: boolean;
   /** Select-type: any number of options (e.g. S + M + L on one product). */
   selectedOptionIds: string[];
   valueText: string | null;
@@ -180,8 +182,13 @@ export function ProductForm({
           setProductAttributes(
             attrs.map((a: AttributeWithOptions) => {
               const saved = savedByAttrId.get(a.id);
+              const hasData =
+                (saved?.optionIds?.length ?? 0) > 0 ||
+                Boolean(saved?.valueText?.trim());
+              const useOnProduct = product ? hasData : true;
               return {
                 attributeId: a.id,
+                useOnProduct,
                 selectedOptionIds: saved?.optionIds ?? [],
                 valueText: saved?.valueText ?? null,
               };
@@ -191,6 +198,7 @@ export function ProductForm({
           setProductAttributes(
             [...savedByAttrId.entries()].map(([attributeId, g]) => ({
               attributeId,
+              useOnProduct: true,
               selectedOptionIds: g.optionIds,
               valueText: g.valueText,
             })),
@@ -205,6 +213,7 @@ export function ProductForm({
   function getAttributeValue(attributeId: string): ProductAttributeValue {
     return productAttributes.find((pa) => pa.attributeId === attributeId) ?? {
       attributeId,
+      useOnProduct: true,
       selectedOptionIds: [],
       valueText: null,
     };
@@ -216,7 +225,15 @@ export function ProductForm({
       const next =
         idx >= 0
           ? [...prev]
-          : [...prev, { attributeId, selectedOptionIds: [], valueText: null }];
+          : [
+              ...prev,
+              {
+                attributeId,
+                useOnProduct: true,
+                selectedOptionIds: [],
+                valueText: null,
+              },
+            ];
       const i = idx >= 0 ? idx : next.length - 1;
       next[i] = { ...next[i], ...update };
       return next;
@@ -277,6 +294,7 @@ export function ProductForm({
   async function onSubmit(values: FormValues) {
     const paPayload: ProductAttributeInput[] = [];
     for (const row of productAttributes) {
+      if (!row.useOnProduct) continue;
       const attr = attributes.find((a) => a.id === row.attributeId);
       const typeNorm = String(attr?.type ?? "")
         .toLowerCase()
@@ -450,14 +468,16 @@ export function ProductForm({
           {attributes.length > 0 && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <Label>Attributes (size, color, etc.)</Label>
+                <Label>Attributes (optional per product)</Label>
                 <span className="text-xs text-muted-foreground">
                   {attributes.length} attribute{attributes.length === 1 ? "" : "s"} from catalog
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Each block lists the catalog attribute id (copy for APIs). For selects, use Whole attribute to attach
-                every option id at once, or tick individual values. JSON body can send{" "}
+                Turn off <span className="font-medium text-foreground">Use on this product</span> for any axis this item
+                does not have (e.g. only colour — turn off Size). Only checked attributes are saved. Each block lists
+                the catalog attribute id (copy for APIs). For selects, use Whole attribute for every option id at once.
+                JSON body can send{" "}
                 <code className="rounded bg-muted px-1 text-xs">
                   {`{ "attributeId": "<id>", "allOptions": true }`}
                 </code>
@@ -481,16 +501,33 @@ export function ProductForm({
                   const selected = new Set(value.selectedOptionIds);
                   const staleIds = value.selectedOptionIds.filter((id) => !optionIdSet.has(id));
                   return (
-                    <div key={attr.id} className="space-y-2">
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">
-                          {attr.name}
-                          {attr.slug && attr.slug !== slugify(attr.name) ? (
-                            <span className="ml-1 font-normal text-muted-foreground/80">
-                              ({attr.slug})
-                            </span>
-                          ) : null}
-                        </Label>
+                    <div
+                      key={attr.id}
+                      className={cn(
+                        "space-y-2 rounded-lg border border-border p-3",
+                        !value.useOnProduct && "bg-muted/20",
+                      )}
+                    >
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
+                        <input
+                          type="checkbox"
+                          className="size-4 rounded border-border"
+                          checked={value.useOnProduct}
+                          onChange={(e) =>
+                            setAttributeValue(attr.id, { useOnProduct: e.target.checked })
+                          }
+                        />
+                        Use on this product
+                        <span className="font-normal text-muted-foreground">— {attr.name}</span>
+                      </label>
+                      {!value.useOnProduct && (
+                        <p className="text-xs text-muted-foreground">
+                          Off — not stored on this product (no {attr.name.toLowerCase()} for this SKU).
+                        </p>
+                      )}
+                      {value.useOnProduct && (
+                        <>
+                      <div className="space-y-1 pt-1">
                         <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
                           <span className="font-mono break-all">
                             id: {attr.id}
@@ -593,6 +630,8 @@ export function ProductForm({
                             })
                           }
                         />
+                      )}
+                        </>
                       )}
                     </div>
                   );
