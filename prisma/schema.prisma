@@ -56,6 +56,19 @@ model User {
   sessions      Session[]
   notifications Notification[]
   storeRecentSearches StoreRecentSearch[]
+  storeShopUserSettings StoreShopUserSettings?
+}
+
+/// Per-viewer shop UI prefs (logged-in: userId; guest: same visitor cookie as search history).
+model StoreShopUserSettings {
+  id          String   @id @default(cuid())
+  userId      String?  @unique
+  visitorId   String?  @unique
+  gridColumns Int      @default(4) // 2–5, validated in app
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// Storefront search history (logged-in: userId; guest: visitorId cookie).

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import {
@@ -7,7 +8,9 @@ import {
 } from "@/lib/storefront-products";
 import type { StorefrontSort } from "@/lib/storefront-products";
 import { shopHref } from "@/lib/shop-url";
+import { getShopGridColumnsForViewer } from "@/lib/store-shop-user-settings";
 import { ProductCard } from "@/components/store/product-card";
+import { ShopGridColumnPicker } from "@/components/store/shop-grid-column-picker";
 import { ShopSortSelect } from "@/components/store/shop-sort-select";
 import { StoreHeader } from "@/components/store/header";
 import { buttonVariants } from "@/components/ui/button";
@@ -38,7 +41,8 @@ export default async function ShopPage({
   const pageRaw = parseInt(pick(sp.page) ?? "1", 10);
   const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
 
-  const [settings, categories, brands, productResult] = await Promise.all([
+  const [settings, categories, brands, productResult, shopGridColumns] =
+    await Promise.all([
     prisma.siteSettings.findFirst({ orderBy: { createdAt: "asc" } }),
     prisma.category.findMany({
       select: { id: true, name: true, slug: true },
@@ -57,6 +61,7 @@ export default async function ShopPage({
       brandSlug: brand,
       sort,
     }),
+    getShopGridColumnsForViewer(),
   ]);
 
   const { rows, total, limit } = productResult;
@@ -66,6 +71,9 @@ export default async function ShopPage({
   const siteTitle = settings?.siteTitle ?? "Store";
   const logoUrl = settings?.logoUrl ?? null;
   const headerVariant = settings?.headerVariant ?? "1";
+  const shopGridStyle = {
+    "--shop-cols": String(shopGridColumns),
+  } as CSSProperties;
 
   const filterBase = {
     search: search ?? null,
@@ -216,7 +224,11 @@ export default async function ShopPage({
                 </p>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
+                  <ShopGridColumnPicker value={shopGridColumns} />
+                  <div
+                    className="grid grid-cols-2 gap-4 sm:gap-6 lg:[grid-template-columns:repeat(var(--shop-cols),minmax(0,1fr))]"
+                    style={shopGridStyle}
+                  >
                     {products.map((p) => (
                       <ProductCard key={p.id} product={p} />
                     ))}
