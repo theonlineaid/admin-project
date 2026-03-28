@@ -262,12 +262,19 @@ export function AttributesTable() {
         paginationPageSize={25}
       />
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <div className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{edit ? "Edit attribute" : "New attribute"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        className="flex max-h-[min(90vh,calc(100dvh-2rem))] w-full max-w-lg flex-col gap-0 overflow-hidden p-0 sm:mx-4"
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="shrink-0 border-b border-border px-6 pt-6 pb-3">
+            <DialogHeader>
+              <DialogTitle>{edit ? "Edit attribute" : "New attribute"}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 py-4">
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label>Label (shown on storefront)</Label>
               <Input
@@ -366,15 +373,18 @@ export function AttributesTable() {
                 </div>
               </div>
             )}
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={save} disabled={loading}>
-              {loading ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
+          <div className="shrink-0 border-t border-border bg-card px-6 py-4">
+            <DialogFooter className="mt-0">
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={save} disabled={loading}>
+                {loading ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </div>
         </div>
       </Dialog>
     </div>

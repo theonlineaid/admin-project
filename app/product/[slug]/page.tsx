@@ -48,12 +48,16 @@ export default async function ProductPage({
 
   if (!product) notFound();
 
-  const selectAttrIds = product.productAttributes
-    .filter((pa) => pa.attribute.type === "select")
-    .map((pa) => pa.attribute.id);
+  const currentSelectAttrIds = [
+    ...new Set(
+      product.productAttributes
+        .filter((pa) => pa.attribute.type === "select")
+        .map((pa) => pa.attribute.id),
+    ),
+  ];
 
   const siblings =
-    selectAttrIds.length > 0
+    currentSelectAttrIds.length > 0
       ? await prisma.product.findMany({
           where: {
             status: "active",
@@ -64,16 +68,71 @@ export default async function ProductPage({
           select: {
             slug: true,
             productAttributes: {
-              where: { attributeId: { in: selectAttrIds } },
+              where: { attribute: { type: "select" } },
               select: { attributeId: true, attributeOptionId: true },
             },
           },
         })
       : [];
 
+  type AttrWithOptions = (typeof product.productAttributes)[number]["attribute"];
+  const attributeDefs = new Map<string, AttrWithOptions>();
+  for (const pa of product.productAttributes) {
+    if (pa.attribute.type === "select") {
+      attributeDefs.set(pa.attribute.id, pa.attribute);
+    }
+  }
+
+  const unionAttrIds = new Set<string>(currentSelectAttrIds);
+  for (const s of siblings) {
+    for (const pa of s.productAttributes) {
+      unionAttrIds.add(pa.attributeId);
+    }
+  }
+
+  const missingAttrIds = [...unionAttrIds].filter((id) => !attributeDefs.has(id));
+  if (missingAttrIds.length > 0) {
+    const extraAttributes = await prisma.attribute.findMany({
+      where: { id: { in: missingAttrIds } },
+      include: {
+        options: {
+          orderBy: { sortOrder: "asc" },
+          select: { id: true, value: true, slug: true, hex: true },
+        },
+      },
+    });
+    for (const a of extraAttributes) {
+      attributeDefs.set(a.id, {
+        id: a.id,
+        slug: a.slug,
+        name: a.name,
+        type: a.type,
+        sortOrder: a.sortOrder,
+        options: a.options,
+      });
+    }
+  }
+
+  const mergedSelectProductAttributes = [...unionAttrIds]
+    .map((attributeId) => {
+      const attr = attributeDefs.get(attributeId);
+      if (!attr || attr.type !== "select" || attr.options.length === 0) return null;
+      const optionIds = product.productAttributes
+        .filter((p) => p.attributeId === attributeId && p.attributeOptionId)
+        .map((p) => p.attributeOptionId!);
+      return {
+        attributeOptionIds: optionIds,
+        attribute: attr,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null)
+    .sort(
+      (a, b) => (a.attribute.sortOrder ?? 0) - (b.attribute.sortOrder ?? 0),
+    );
+
   const selectGroups = buildProductSelectAttributeGroups({
     currentSlug: product.slug,
-    productAttributes: product.productAttributes,
+    productAttributes: mergedSelectProductAttributes,
     siblings,
   });
 
@@ -129,7 +188,7 @@ export default async function ProductPage({
               )}
             </div>
 
-            <ProductSelectAttributes groups={selectGroups} />
+            <ProductSelectAttributes groups={selectGroups} currentSlug={product.slug} />
 
             {product.description && (
               <div className="mt-6 text-muted-foreground lg:mt-8">

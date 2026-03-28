@@ -240,7 +240,9 @@ model ProductAttribute {
   attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   attributeOption AttributeOption? @relation(fields: [attributeOptionId], references: [id], onDelete: SetNull)
 
-  @@unique([productId, attributeId])
+  // One row per (product, attribute, option). Multiple rows per attribute = multiple selected options (e.g. sizes S+M+L).
+  // Text/number rows use attributeOptionId = null (one row per product+attribute).
+  @@unique([productId, attributeId, attributeOptionId])
 }
 
 model Order {

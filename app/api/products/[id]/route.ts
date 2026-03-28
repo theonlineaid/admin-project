@@ -104,8 +104,14 @@ export async function PUT(
           data: paInput.map((pa) => ({
             productId: id,
             attributeId: pa.attributeId,
-            attributeOptionId: pa.attributeOptionId ?? undefined,
-            valueText: pa.valueText ?? undefined,
+            attributeOptionId:
+              pa.attributeOptionId != null && pa.attributeOptionId !== ""
+                ? pa.attributeOptionId
+                : null,
+            valueText:
+              pa.valueText != null && String(pa.valueText).trim() !== ""
+                ? String(pa.valueText).trim()
+                : null,
           })),
         });
       }

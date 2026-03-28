@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/incompatible-library -- React Hook Form watch() used for categoryId filter */
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn, slugify } from "@/lib/utils";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -33,12 +35,14 @@ type AttributeWithOptions = {
   name: string;
   slug: string;
   type: string;
-  options: AttributeOption[];
+  sortOrder?: number;
+  options?: AttributeOption[] | null;
 };
 type ProductAttributeValue = {
   attributeId: string;
-  attributeOptionId?: string | null;
-  valueText?: string | null;
+  /** Select-type: any number of options (e.g. S + M + L on one product). */
+  selectedOptionIds: string[];
+  valueText: string | null;
 };
 
 export function ProductForm({
@@ -127,26 +131,43 @@ export function ProductForm({
   }, []);
 
   useEffect(() => {
-    fetch("/api/attributes")
+    fetch("/api/attributes", { cache: "no-store" })
       .then((r) => r.json())
       .then((list) => {
         const attrs = Array.isArray(list) ? list : [];
         setAttributes(attrs);
-        if (product?.productAttributes?.length) {
+        const savedByAttrId = new Map<
+          string,
+          { optionIds: string[]; valueText: string | null }
+        >();
+        for (const pa of product?.productAttributes ?? []) {
+          let g = savedByAttrId.get(pa.attributeId);
+          if (!g) {
+            g = { optionIds: [], valueText: null };
+            savedByAttrId.set(pa.attributeId, g);
+          }
+          if (pa.attributeOptionId) g.optionIds.push(pa.attributeOptionId);
+          const vt = pa.valueText?.trim();
+          if (vt) g.valueText = vt;
+        }
+        if (attrs.length > 0) {
           setProductAttributes(
-            product.productAttributes.map((pa) => ({
-              attributeId: pa.attributeId,
-              attributeOptionId: pa.attributeOptionId ?? null,
-              valueText: pa.valueText ?? null,
-            }))
+            attrs.map((a: AttributeWithOptions) => {
+              const saved = savedByAttrId.get(a.id);
+              return {
+                attributeId: a.id,
+                selectedOptionIds: saved?.optionIds ?? [],
+                valueText: saved?.valueText ?? null,
+              };
+            }),
           );
-        } else if (attrs.length) {
+        } else if (product?.productAttributes?.length) {
           setProductAttributes(
-            attrs.map((a: AttributeWithOptions) => ({
-              attributeId: a.id,
-              attributeOptionId: null,
-              valueText: null,
-            }))
+            [...savedByAttrId.entries()].map(([attributeId, g]) => ({
+              attributeId,
+              selectedOptionIds: g.optionIds,
+              valueText: g.valueText,
+            })),
           );
         }
       })
@@ -158,7 +179,7 @@ export function ProductForm({
   function getAttributeValue(attributeId: string): ProductAttributeValue {
     return productAttributes.find((pa) => pa.attributeId === attributeId) ?? {
       attributeId,
-      attributeOptionId: null,
+      selectedOptionIds: [],
       valueText: null,
     };
   }
@@ -166,11 +187,34 @@ export function ProductForm({
   function setAttributeValue(attributeId: string, update: Partial<ProductAttributeValue>) {
     setProductAttributes((prev) => {
       const idx = prev.findIndex((pa) => pa.attributeId === attributeId);
-      const next = idx >= 0 ? [...prev] : [...prev, { attributeId, attributeOptionId: null, valueText: null }];
+      const next =
+        idx >= 0
+          ? [...prev]
+          : [...prev, { attributeId, selectedOptionIds: [], valueText: null }];
       const i = idx >= 0 ? idx : next.length - 1;
       next[i] = { ...next[i], ...update };
       return next;
     });
+  }
+
+  function toggleSelectOption(attributeId: string, optionId: string) {
+    setProductAttributes((prev) =>
+      prev.map((row) => {
+        if (row.attributeId !== attributeId) return row;
+        const set = new Set(row.selectedOptionIds);
+        if (set.has(optionId)) set.delete(optionId);
+        else set.add(optionId);
+        return { ...row, selectedOptionIds: [...set] };
+      }),
+    );
+  }
+
+  function setAllSelectOptions(attributeId: string, optionIds: string[]) {
+    setAttributeValue(attributeId, { selectedOptionIds: [...optionIds] });
+  }
+
+  function clearSelectOptions(attributeId: string) {
+    setAttributeValue(attributeId, { selectedOptionIds: [] });
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -205,17 +249,32 @@ export function ProductForm({
   }
 
   async function onSubmit(values: FormValues) {
-    const paPayload = productAttributes
-      .filter(
-        (pa) =>
-          pa.attributeOptionId != null ||
-          (pa.valueText != null && String(pa.valueText).trim() !== "")
-      )
-      .map((pa) => ({
-        attributeId: pa.attributeId,
-        attributeOptionId: pa.attributeOptionId ?? undefined,
-        valueText: pa.valueText?.trim() || undefined,
-      }));
+    const paPayload: {
+      attributeId: string;
+      attributeOptionId: string | null;
+      valueText: string | null;
+    }[] = [];
+    for (const row of productAttributes) {
+      const attr = attributes.find((a) => a.id === row.attributeId);
+      const typeNorm = String(attr?.type ?? "")
+        .toLowerCase()
+        .trim();
+      if (typeNorm === "select") {
+        for (const oid of row.selectedOptionIds) {
+          paPayload.push({
+            attributeId: row.attributeId,
+            attributeOptionId: oid,
+            valueText: null,
+          });
+        }
+      } else if (row.valueText != null && String(row.valueText).trim() !== "") {
+        paPayload.push({
+          attributeId: row.attributeId,
+          attributeOptionId: null,
+          valueText: String(row.valueText).trim(),
+        });
+      }
+    }
     const payload = {
       ...values,
       compareAtPrice: values.compareAtPrice || undefined,
@@ -354,34 +413,106 @@ export function ProductForm({
           </div>
           {attributes.length > 0 && (
             <div className="space-y-3">
-              <Label>Attributes (size, weight, etc.)</Label>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <Label>Attributes (size, color, etc.)</Label>
+                <span className="text-xs text-muted-foreground">
+                  {attributes.length} attribute{attributes.length === 1 ? "" : "s"} from catalog
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground">
-                Set optional product attributes. Manage attribute types in Dashboard → Attributes.
+                For select attributes, check every value this product offers (e.g. all sizes S–XXL). To show more
+                rows here, add more attributes in{" "}
+                <Link
+                  href="/dashboard/attributes"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Dashboard → Attributes
+                </Link>
+                .
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 {attributes.map((attr) => {
                   const value = getAttributeValue(attr.id);
+                  const typeNorm = String(attr.type ?? "")
+                    .toLowerCase()
+                    .trim();
+                  const options = Array.isArray(attr.options) ? attr.options : [];
+                  const optionIdSet = new Set(options.map((o) => o.id));
+                  const selected = new Set(value.selectedOptionIds);
+                  const staleIds = value.selectedOptionIds.filter((id) => !optionIdSet.has(id));
                   return (
                     <div key={attr.id} className="space-y-2">
-                      <Label className="text-muted-foreground">{attr.name}</Label>
-                      {attr.type === "select" && attr.options?.length ? (
-                        <Select
-                          value={value.attributeOptionId ?? ""}
-                          onChange={(e) =>
-                            setAttributeValue(attr.id, {
-                              attributeOptionId: e.target.value || null,
-                              valueText: null,
-                            })
-                          }
-                        >
-                          <option value="">—</option>
-                          {attr.options.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                              {opt.value}
-                            </option>
-                          ))}
-                        </Select>
-                      ) : attr.type === "number" ? (
+                      <Label className="text-muted-foreground">
+                        {attr.name}
+                        {attr.slug && attr.slug !== slugify(attr.name) ? (
+                          <span className="ml-1 font-normal text-muted-foreground/80">
+                            ({attr.slug})
+                          </span>
+                        ) : null}
+                      </Label>
+                      {typeNorm === "select" ? (
+                        <div className="space-y-2">
+                          {options.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() =>
+                                  setAllSelectOptions(
+                                    attr.id,
+                                    options.map((o) => o.id),
+                                  )
+                                }
+                              >
+                                Select all
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => clearSelectOptions(attr.id)}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          )}
+                          {staleIds.length > 0 && (
+                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                              Saved option id(s) no longer in catalog — remove or fix in Attributes.
+                            </p>
+                          )}
+                          {options.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                              No values yet — add them in Dashboard → Attributes.
+                            </p>
+                          ) : (
+                            <div className="flex flex-wrap gap-2 rounded-lg border border-border p-3">
+                              {options.map((opt) => (
+                                <label
+                                  key={opt.id}
+                                  className={cn(
+                                    "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
+                                    selected.has(opt.id)
+                                      ? "border-primary bg-primary/10"
+                                      : "border-border hover:bg-muted/60",
+                                  )}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="size-4 rounded border-border"
+                                    checked={selected.has(opt.id)}
+                                    onChange={() => toggleSelectOption(attr.id, opt.id)}
+                                  />
+                                  <span>{opt.value}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : typeNorm === "number" ? (
                         <Input
                           type="number"
                           step="any"
@@ -390,7 +521,6 @@ export function ProductForm({
                           onChange={(e) =>
                             setAttributeValue(attr.id, {
                               valueText: e.target.value || null,
-                              attributeOptionId: null,
                             })
                           }
                         />
@@ -401,7 +531,6 @@ export function ProductForm({
                           onChange={(e) =>
                             setAttributeValue(attr.id, {
                               valueText: e.target.value || null,
-                              attributeOptionId: null,
                             })
                           }
                         />

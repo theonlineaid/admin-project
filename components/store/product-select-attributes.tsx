@@ -8,7 +8,8 @@ export type ProductSelectAttributeGroup = {
   /** e.g. "size" | "color" — used for layout hints */
   attributeSlug: string;
   label: string;
-  selectedOptionId: string;
+  /** Option ids this product offers (e.g. S and M on one listing). */
+  selectedOptionIds: string[];
   options: {
     id: string;
     label: string;
@@ -23,8 +24,11 @@ function isHexColor(h: string | null | undefined): h is string {
 
 export function ProductSelectAttributes({
   groups,
+  currentSlug,
 }: {
   groups: ProductSelectAttributeGroup[];
+  /** Product URL slug for this page — chips matching this slug are the “current” variant. */
+  currentSlug: string;
 }) {
   const router = useRouter();
   if (groups.length === 0) return null;
@@ -49,34 +53,42 @@ export function ProductSelectAttributes({
               aria-label={g.label}
             >
               {g.options.map((opt) => {
-                const selected = opt.id === g.selectedOptionId;
-                const available = opt.slug != null;
+                const offeredHere = g.selectedOptionIds.includes(opt.id);
+                const hasLink = opt.slug != null;
+                const isThisPage = hasLink && opt.slug === currentSlug;
                 const showSwatch = isHexColor(opt.hex);
+
                 return (
                   <button
                     key={opt.id}
                     type="button"
                     role="option"
-                    aria-selected={selected}
-                    aria-disabled={!available}
-                    disabled={!available}
+                    aria-selected={isThisPage}
+                    aria-disabled={!hasLink && !offeredHere}
+                    disabled={!hasLink && !offeredHere}
                     title={
-                      !available
+                      !offeredHere
                         ? `${opt.label} is not available for this product`
-                        : opt.label
+                        : isThisPage
+                          ? opt.label
+                          : hasLink
+                            ? `${opt.label} — view this option`
+                            : opt.label
                     }
                     onClick={() => {
-                      if (!opt.slug || selected) return;
+                      if (!hasLink || isThisPage) return;
                       router.push(`/product/${opt.slug}`);
                     }}
                     className={cn(
                       "inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
-                      selected &&
+                      isThisPage &&
                         "cursor-default border-primary bg-primary/10 text-primary ring-2 ring-primary/25",
-                      !selected &&
-                        available &&
+                      offeredHere &&
+                        !isThisPage &&
+                        hasLink &&
                         "border-border hover:border-primary/60 hover:bg-muted/80",
-                      !available &&
+                      offeredHere && !hasLink && "border-border bg-muted/40",
+                      !offeredHere &&
                         "cursor-not-allowed border-dashed border-border bg-muted/20 text-muted-foreground opacity-60",
                     )}
                   >

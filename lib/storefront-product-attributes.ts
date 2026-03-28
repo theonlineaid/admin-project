@@ -30,12 +30,14 @@ export function buildStorefrontAttributeRows(
 }
 
 type SelectPA = {
-  attributeOptionId: string | null;
+  /** All option ids assigned to this product for this attribute (e.g. S, M, L). */
+  attributeOptionIds: string[];
   attribute: {
     id: string;
     slug: string;
     type: string;
     name: string;
+    sortOrder?: number;
     options: Array<{
       id: string;
       value: string;
@@ -56,11 +58,13 @@ type SiblingRow = {
 function optionIdToSlugMap(
   attributeId: string,
   currentSlug: string,
-  currentOptionId: string | null,
+  currentOptionIds: string[],
   siblings: SiblingRow[],
 ): Map<string, string> {
   const m = new Map<string, string>();
-  if (currentOptionId) m.set(currentOptionId, currentSlug);
+  for (const oid of currentOptionIds) {
+    if (oid) m.set(oid, currentSlug);
+  }
   for (const s of siblings) {
     const pa = s.productAttributes.find((p) => p.attributeId === attributeId);
     if (pa?.attributeOptionId) m.set(pa.attributeOptionId, s.slug);
@@ -77,7 +81,7 @@ export function buildProductSelectAttributeGroups(params: {
   attributeId: string;
   attributeSlug: string;
   label: string;
-  selectedOptionId: string;
+  selectedOptionIds: string[];
   options: {
     id: string;
     label: string;
@@ -90,7 +94,7 @@ export function buildProductSelectAttributeGroups(params: {
     attributeId: string;
     attributeSlug: string;
     label: string;
-    selectedOptionId: string;
+    selectedOptionIds: string[];
     options: {
       id: string;
       label: string;
@@ -103,11 +107,11 @@ export function buildProductSelectAttributeGroups(params: {
     if (pa.attribute.type !== "select" || pa.attribute.options.length === 0) {
       continue;
     }
-    const selectedId = pa.attributeOptionId ?? "";
+    const selectedIds = pa.attributeOptionIds.filter(Boolean);
     const slugByOption = optionIdToSlugMap(
       pa.attribute.id,
       currentSlug,
-      pa.attributeOptionId,
+      selectedIds,
       siblings,
     );
     const options = pa.attribute.options.map((opt) => ({
@@ -120,16 +124,17 @@ export function buildProductSelectAttributeGroups(params: {
       attributeId: pa.attribute.id,
       attributeSlug: pa.attribute.slug,
       label: pa.attribute.name,
-      selectedOptionId: selectedId,
+      selectedOptionIds: selectedIds,
       options,
     });
   }
   return groups;
 }
 
-/** One-line snapshot for order lines / invoices, e.g. "Size: Medium · Color: Black". */
+/** One-line snapshot for order lines / invoices, e.g. "Size: M, L · Color: Black". */
 export function formatOrderItemVariantSummary(product: {
   productAttributes: Array<{
+    attributeId: string;
     attribute: {
       name: string;
       type: string;
@@ -140,13 +145,34 @@ export function formatOrderItemVariantSummary(product: {
     valueText: string | null;
   }>;
 }): string | null {
-  const parts: string[] = [];
+  const byAttr = new Map<
+    string,
+    { label: string; type: string; optionValues: string[]; textValue: string | null }
+  >();
   for (const pa of product.productAttributes) {
-    const label = pa.attribute.name;
+    let g = byAttr.get(pa.attributeId);
+    if (!g) {
+      g = {
+        label: pa.attribute.name,
+        type: pa.attribute.type,
+        optionValues: [],
+        textValue: null,
+      };
+      byAttr.set(pa.attributeId, g);
+    }
     if (pa.attribute.type === "select" && pa.attributeOption) {
-      parts.push(`${label}: ${pa.attributeOption.value}`);
+      g.optionValues.push(pa.attributeOption.value);
     } else if (pa.valueText?.trim()) {
-      parts.push(`${label}: ${pa.valueText.trim()}`);
+      g.textValue = pa.valueText.trim();
+    }
+  }
+  const parts: string[] = [];
+  for (const g of byAttr.values()) {
+    if (g.type === "select" && g.optionValues.length > 0) {
+      const uniq = [...new Set(g.optionValues)];
+      parts.push(`${g.label}: ${uniq.join(", ")}`);
+    } else if (g.textValue) {
+      parts.push(`${g.label}: ${g.textValue}`);
     }
   }
   if (parts.length === 0) return null;
