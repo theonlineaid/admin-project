@@ -5,8 +5,9 @@ import type { HeaderVariantProps } from "./types";
 import { Logo } from "./logo";
 import { SearchRow } from "./search-row";
 import { ActionIcons } from "./action-icons";
+import { HeaderStoreRowLayout } from "./header-store-row-layout";
 
-/** Two Bars: Top bar (nav) | Bottom bar (Logo + Search + Icons) */
+/** Two Bars: Top bar (nav) | Bottom bar: logo · centered search · actions */
 export function HeaderTwoBars({
   siteTitle,
   logoUrl,
@@ -30,10 +31,12 @@ export function HeaderTwoBars({
           </Link>
         </div>
       </div>
-      <div className="container mx-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
-        <Logo siteTitle={siteTitle} logoUrl={logoUrl} />
-        <SearchRow categories={categories} />
-        <ActionIcons className="shrink-0" />
+      <div className="container mx-auto px-4 py-3">
+        <HeaderStoreRowLayout
+          logo={<Logo siteTitle={siteTitle} logoUrl={logoUrl} />}
+          search={<SearchRow categories={categories} />}
+          actions={<ActionIcons className="shrink-0" />}
+        />
       </div>
     </header>
   );

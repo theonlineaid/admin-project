@@ -7,8 +7,9 @@ import type { HeaderVariantProps } from "./types";
 import { Logo } from "./logo";
 import { SearchRow } from "./search-row";
 import { ActionIcons } from "./action-icons";
+import { HeaderStoreRowLayout } from "./header-store-row-layout";
 
-/** Mega Menu: Row1 Logo | Search | Icons | Row2 ☰ All Categories (mega) | category links */
+/** Mega Menu: Row1 logo · centered search · actions | Row2 ☰ All Categories (mega) | category links */
 export function HeaderMegaMenu({
   siteTitle,
   logoUrl,
@@ -19,13 +20,13 @@ export function HeaderMegaMenu({
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="container mx-auto flex flex-col px-4">
-        <div className="flex items-center gap-4 py-2">
-          <Logo siteTitle={siteTitle} logoUrl={logoUrl} />
-          <SearchRow categories={categories} />
-          <ActionIcons className="shrink-0" />
-        </div>
-        <nav className="flex items-center gap-1 border-t border-border">
+      <div className="container mx-auto flex flex-col px-4 py-2 sm:py-0">
+        <HeaderStoreRowLayout
+          logo={<Logo siteTitle={siteTitle} logoUrl={logoUrl} />}
+          search={<SearchRow categories={categories} />}
+          actions={<ActionIcons className="shrink-0" />}
+        />
+        <nav className="flex items-center gap-1 border-t border-border pt-1">
           <div
             className="relative flex items-center gap-1 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-t"
             onMouseEnter={() => setMegaOpen(true)}

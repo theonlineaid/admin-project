@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BannerCarousel } from "@/components/store/banner-carousel";
 import { HomeProductsSection } from "@/components/store/home-products-section";
 import { StoreHeader } from "@/components/store/header";
 import type { StoreHomePageData } from "@/lib/store-home-data";
@@ -12,6 +13,7 @@ type Props = {
 
 export function StoreHomeShell({ data, layout = "default" }: Props) {
   const {
+    bannerUrls,
     siteTitle,
     logoUrl,
     headerVariant,
@@ -33,11 +35,11 @@ export function StoreHomeShell({ data, layout = "default" }: Props) {
         categories={categories}
       />
 
-      {/* {bannerUrls.length > 0 && (
+      {bannerUrls.length > 0 && (
         <div className="w-full shrink-0">
           <BannerCarousel urls={bannerUrls} />
         </div>
-      )} */}
+      )}
 
       <main className="flex-1">
         <section

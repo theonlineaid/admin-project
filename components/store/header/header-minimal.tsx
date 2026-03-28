@@ -5,33 +5,38 @@ import type { HeaderVariantProps } from "./types";
 import { Logo } from "./logo";
 import { SearchRow } from "./search-row";
 import { ActionIcons } from "./action-icons";
+import { HeaderStoreRowLayout } from "./header-store-row-layout";
 
-/** Minimal Modern: Logo | Menu | Search | Icons */
+/** Minimal Modern: menu + logo left · centered search · icons right (desktop); stacked on small screens */
 export function HeaderMinimal({
   siteTitle,
   logoUrl,
   categories,
 }: HeaderVariantProps) {
+  const menuBtn = (
+    <button
+      type="button"
+      className="flex shrink-0 rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+      aria-label="Menu"
+    >
+      <Menu className="h-5 w-5" />
+    </button>
+  );
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="container mx-auto flex h-12 items-center gap-3 px-4">
-        <button
-          type="button"
-          className="flex shrink-0 rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
-          aria-label="Menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <Logo siteTitle={siteTitle} logoUrl={logoUrl} className="text-sm" />
-        <div className="hidden lg:flex lg:min-w-0 lg:flex-1 lg:max-w-md">
-          <SearchRow categories={categories} />
-        </div>
-        <div className="flex flex-1 justify-end lg:flex-initial">
-          <ActionIcons />
-        </div>
-        <div className="lg:hidden flex min-w-0 flex-1 max-w-[120px]">
-          <SearchRow categories={categories} />
-        </div>
+      <div className="container mx-auto px-4 py-2 sm:py-0 sm:min-h-12 sm:flex sm:items-center">
+        <HeaderStoreRowLayout
+          className="sm:min-h-12"
+          logo={
+            <div className="flex items-center gap-1">
+              {menuBtn}
+              <Logo siteTitle={siteTitle} logoUrl={logoUrl} className="text-sm" />
+            </div>
+          }
+          search={<SearchRow categories={categories} />}
+          actions={<ActionIcons className="shrink-0" />}
+        />
       </div>
     </header>
   );

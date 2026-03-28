@@ -7,7 +7,7 @@ type SearchRowProps = { className?: string; categories: Category[] };
 
 export function SearchRow({ className = "", categories }: SearchRowProps) {
   return (
-    <div className={`flex min-w-0 flex-1 items-center gap-2 max-w-2xl ${className}`}>
+    <div className={`flex min-w-0 w-full items-center justify-center gap-2 ${className}`}>
       <AmazonSearchBar categories={categories} className="w-full" />
     </div>
   );

@@ -5,8 +5,9 @@ import type { HeaderVariantProps } from "./types";
 import { Logo } from "./logo";
 import { SearchRow } from "./search-row";
 import { ActionIcons } from "./action-icons";
+import { HeaderStoreRowLayout } from "./header-store-row-layout";
 
-/** Two Row Professional: Row1 Logo | Search | Icons | Row2 Categories | Deals | Brands | Flash Sale */
+/** Two Row Professional: Row1 logo · centered search · actions | Row2 nav links */
 export function HeaderTwoRow({
   siteTitle,
   logoUrl,
@@ -15,11 +16,11 @@ export function HeaderTwoRow({
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container mx-auto flex flex-col gap-2 px-4 py-3">
-        <div className="flex items-center gap-4">
-          <Logo siteTitle={siteTitle} logoUrl={logoUrl} />
-          <SearchRow categories={categories} />
-          <ActionIcons className="shrink-0" />
-        </div>
+        <HeaderStoreRowLayout
+          logo={<Logo siteTitle={siteTitle} logoUrl={logoUrl} />}
+          search={<SearchRow categories={categories} />}
+          actions={<ActionIcons className="shrink-0" />}
+        />
         <nav className="flex flex-wrap items-center gap-4 border-t border-border pt-2 text-sm">
           <Link href="/categories" className="font-medium text-foreground hover:text-primary">
             Categories
