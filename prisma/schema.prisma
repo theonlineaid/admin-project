@@ -61,12 +61,15 @@ model User {
 
 /// Per-viewer shop UI prefs (logged-in: userId; guest: same visitor cookie as search history).
 model StoreShopUserSettings {
-  id          String   @id @default(cuid())
-  userId      String?  @unique
-  visitorId   String?  @unique
-  gridColumns Int      @default(4) // 2–5, validated in app
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  userId             String?  @unique
+  visitorId          String?  @unique
+  gridColumns        Int      @default(4) // 2–5, validated in app
+  pageSize           Int      @default(12) // 12|24|36|48
+  listPage           Int      @default(1)
+  shopListFilterKey  String   @default("") // when URL filters change, reset listPage to 1
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

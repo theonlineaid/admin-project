@@ -1,16 +1,16 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Suspense } from "react";
+import { RotateCcw } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import {
-  fetchStorefrontProducts,
-  serializeStorefrontProductForJson,
-} from "@/lib/storefront-products";
+import { serializeStorefrontProductForJson } from "@/lib/storefront-products";
 import type { StorefrontSort } from "@/lib/storefront-products";
-import { shopHref } from "@/lib/shop-url";
-import { getShopGridColumnsForViewer } from "@/lib/store-shop-user-settings";
+import { buildShopFilterKey, shopHref } from "@/lib/shop-url";
+import { resolveShopProductListing } from "@/lib/store-shop-user-settings";
 import { ProductCard } from "@/components/store/product-card";
 import { ShopGridColumnPicker } from "@/components/store/shop-grid-column-picker";
+import { ShopPageSizeSelect } from "@/components/store/shop-page-size-select";
+import { ShopPagination } from "@/components/store/shop-pagination";
 import { ShopSortSelect } from "@/components/store/shop-sort-select";
 import { StoreHeader } from "@/components/store/header";
 import { buttonVariants } from "@/components/ui/button";
@@ -38,11 +38,15 @@ export default async function ShopPage({
   const sortRaw = pick(sp.sort)?.trim();
   const sort: StorefrontSort =
     sortRaw === "price_asc" || sortRaw === "price_desc" ? sortRaw : "newest";
-  const pageRaw = parseInt(pick(sp.page) ?? "1", 10);
-  const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
 
-  const [settings, categories, brands, productResult, shopGridColumns] =
-    await Promise.all([
+  const filterKey = buildShopFilterKey({
+    search: search ?? null,
+    categorySlug: categorySlug ?? null,
+    brand: brand ?? null,
+    sort,
+  });
+
+  const [settings, categories, brands, listing] = await Promise.all([
     prisma.siteSettings.findFirst({ orderBy: { createdAt: "asc" } }),
     prisma.category.findMany({
       select: { id: true, name: true, slug: true },
@@ -53,20 +57,25 @@ export default async function ShopPage({
       select: { id: true, name: true, slug: true },
       orderBy: { name: "asc" },
     }),
-    fetchStorefrontProducts({
-      page,
-      limit: 12,
+    resolveShopProductListing({
+      filterKey,
       search,
       categorySlug,
       brandSlug: brand,
       sort,
     }),
-    getShopGridColumnsForViewer(),
   ]);
 
-  const { rows, total, limit } = productResult;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const products = rows.map(serializeStorefrontProductForJson);
+  const {
+    gridColumns: shopGridColumns,
+    pageSize,
+    listPage,
+    total,
+    totalPages,
+    productResult,
+  } = listing;
+
+  const products = productResult.rows.map(serializeStorefrontProductForJson);
 
   const siteTitle = settings?.siteTitle ?? "Store";
   const logoUrl = settings?.logoUrl ?? null;
@@ -79,17 +88,16 @@ export default async function ShopPage({
     search: search ?? null,
     brand: brand ?? null,
     sort: sort === "newest" ? null : sort,
-    page: null as number | null,
   };
 
-  const pageLink = (p: number) =>
-    shopHref({
-      search: search ?? null,
-      categorySlug: categorySlug ?? null,
-      brand: brand ?? null,
-      sort: sort === "newest" ? null : sort,
-      page: p > 1 ? p : null,
-    });
+  const hasActiveFilters = Boolean(
+    search ||
+      categorySlug ||
+      brand ||
+      sort !== "newest" ||
+      listPage > 1 ||
+      pageSize !== 12,
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -136,7 +144,7 @@ export default async function ShopPage({
                         "block rounded-md px-2 py-1.5 text-sm hover:bg-muted",
                         !categorySlug
                           ? "bg-muted font-medium text-foreground"
-                          : "text-muted-foreground"
+                          : "text-muted-foreground",
                       )}
                     >
                       All categories
@@ -153,7 +161,7 @@ export default async function ShopPage({
                           "block rounded-md px-2 py-1.5 text-sm hover:bg-muted",
                           categorySlug === c.slug
                             ? "bg-muted font-medium text-foreground"
-                            : "text-muted-foreground"
+                            : "text-muted-foreground",
                         )}
                       >
                         {c.name}
@@ -177,7 +185,7 @@ export default async function ShopPage({
                         "block rounded-md px-2 py-1.5 text-sm hover:bg-muted",
                         !brand
                           ? "bg-muted font-medium text-foreground"
-                          : "text-muted-foreground"
+                          : "text-muted-foreground",
                       )}
                     >
                       All brands
@@ -195,7 +203,7 @@ export default async function ShopPage({
                           "block rounded-md px-2 py-1.5 text-sm hover:bg-muted",
                           brand === b.slug
                             ? "bg-muted font-medium text-foreground"
-                            : "text-muted-foreground"
+                            : "text-muted-foreground",
                         )}
                       >
                         {b.name}
@@ -207,19 +215,36 @@ export default async function ShopPage({
             </aside>
 
             <div className="min-w-0 flex-1">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                <ShopGridColumnPicker value={shopGridColumns} className="mb-0" />
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <ShopGridColumnPicker value={shopGridColumns} className="mb-0" />
+                  {hasActiveFilters && (
+                    <Link
+                      href="/shop"
+                      className={cn(
+                        buttonVariants({ variant: "outline", size: "sm" }),
+                        "inline-flex shrink-0 items-center gap-1.5",
+                      )}
+                    >
+                      <RotateCcw className="size-3.5" aria-hidden />
+                      Reset filters
+                    </Link>
+                  )}
+                </div>
                 <Suspense
                   fallback={
-                    <div
-                      className="h-10 w-full max-w-[14rem] rounded-md bg-muted/50 sm:ml-auto"
-                      aria-hidden
-                    />
+                    <div className="flex h-10 w-full flex-wrap gap-2 sm:ml-auto sm:max-w-md sm:justify-end">
+                      <div className="h-10 flex-1 rounded-md bg-muted/50 sm:max-w-[6rem]" />
+                      <div className="h-10 flex-1 rounded-md bg-muted/50 sm:max-w-[14rem]" />
+                    </div>
                   }
                 >
-                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-                    <span className="text-sm font-medium text-muted-foreground">Sort</span>
-                    <ShopSortSelect className="min-w-0 flex-1 sm:w-auto sm:min-w-[12rem]" />
+                  <div className="flex w-full flex-wrap items-center gap-3 sm:ml-auto sm:w-auto sm:justify-end">
+                    <ShopPageSizeSelect value={pageSize} className="min-w-[4.5rem]" />
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-initial sm:justify-end">
+                      <span className="text-sm font-medium text-muted-foreground">Sort</span>
+                      <ShopSortSelect className="min-w-0 flex-1 sm:w-auto sm:min-w-[12rem]" />
+                    </div>
                   </div>
                 </Suspense>
               </div>
@@ -238,29 +263,7 @@ export default async function ShopPage({
                       <ProductCard key={p.id} product={p} />
                     ))}
                   </div>
-                  {totalPages > 1 && (
-                    <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-                      {page > 1 && (
-                        <Link
-                          href={pageLink(page - 1)}
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                        >
-                          Previous
-                        </Link>
-                      )}
-                      <span className="px-2 text-sm text-muted-foreground">
-                        Page {page} of {totalPages}
-                      </span>
-                      {page < totalPages && (
-                        <Link
-                          href={pageLink(page + 1)}
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                        >
-                          Next
-                        </Link>
-                      )}
-                    </div>
-                  )}
+                  <ShopPagination page={listPage} totalPages={totalPages} />
                 </>
               )}
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { shopHref } from "@/lib/shop-url";
+import { shopHref, shopQueryFromSearchParams } from "@/lib/shop-url";
 import { cn } from "@/lib/utils";
 
 export function ShopSortSelect({ className }: { className?: string }) {
@@ -25,14 +25,13 @@ export function ShopSortSelect({ className }: { className?: string }) {
       value={value}
       onChange={(e) => {
         const sort = e.target.value;
-        const href = shopHref({
-          search: searchParams.get("search"),
-          categorySlug: searchParams.get("categorySlug"),
-          brand: searchParams.get("brand"),
-          sort: sort === "newest" ? null : sort,
-          page: null,
-        });
-        router.push(href);
+        const q = shopQueryFromSearchParams(searchParams);
+        router.push(
+          shopHref({
+            ...q,
+            sort: sort === "newest" ? null : sort,
+          }),
+        );
       }}
     >
       <option value="newest">Newest</option>

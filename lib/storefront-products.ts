@@ -100,6 +100,13 @@ export async function fetchStorefrontProducts(params: {
   return { rows, total, page, limit };
 }
 
+export async function countStorefrontProducts(
+  filters: StorefrontProductFilters & { sort?: StorefrontSort },
+): Promise<number> {
+  const where = await buildStorefrontProductWhere(filters);
+  return prisma.product.count({ where });
+}
+
 export function serializeStorefrontProductForJson(p: ProductRowBase) {
   return {
     id: p.id,

@@ -131,7 +131,6 @@ function AmazonSearchFields({
         categorySlug: slug || null,
         brand: null,
         sort: null,
-        page: null,
       });
     },
     [categoryId, categories]
