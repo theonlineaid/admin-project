@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { History, Search, X } from "lucide-react";
+import { shopHref } from "@/lib/shop-url";
 import { cn } from "@/lib/utils";
 
 export type AmazonSearchCategory = { id: string; name: string; slug: string };
@@ -27,23 +28,16 @@ function useDebouncedValue<T>(value: T, delay: number): T {
   return debounced;
 }
 
-function storefrontResultsPath(pathname: string): string {
-  if (pathname === "/store/index1") return "/store/index1";
-  return "/";
-}
-
 function AmazonSearchFields({
   categories,
   className,
   initialQuery,
   initialCategoryId,
-  pathname,
 }: {
   categories: AmazonSearchCategory[];
   className?: string;
   initialQuery: string;
   initialCategoryId: string;
-  pathname: string;
 }) {
   const router = useRouter();
   const [categoryId, setCategoryId] = useState(initialCategoryId);
@@ -52,17 +46,31 @@ function AmazonSearchFields({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [recentFromApi, setRecentFromApi] = useState<string[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 220);
   const rootRef = useRef<HTMLDivElement>(null);
+  /** Avoid "Loading…" flicker on focus when we already have terms to show. */
+  const recentFromApiRef = useRef<string[]>([]);
+  recentFromApiRef.current = recentFromApi;
 
   const refreshRecent = useCallback(() => {
-    return fetch("/api/store/search/recent")
+    const showSpinner = recentFromApiRef.current.length === 0;
+    if (showSpinner) setRecentLoading(true);
+    return fetch("/api/store/search/recent", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((json: { terms?: string[] }) => {
         setRecentFromApi(Array.isArray(json.terms) ? json.terms : []);
       })
-      .catch(() => setRecentFromApi([]));
+      .catch(() => setRecentFromApi([]))
+      .finally(() => {
+        if (showSpinner) setRecentLoading(false);
+      });
   }, []);
+
+  /** Prefetch so recents are often ready before first focus (e.g. after navigation from search). */
+  useEffect(() => {
+    void refreshRecent();
+  }, [refreshRecent]);
 
   useEffect(() => {
     if (open) void refreshRecent();
@@ -118,14 +126,15 @@ function AmazonSearchFields({
     (searchText: string) => {
       const q = searchText.trim();
       const slug = categories.find((c) => c.id === categoryId)?.slug ?? "";
-      const sp = new URLSearchParams();
-      if (q) sp.set("search", q);
-      if (slug) sp.set("categorySlug", slug);
-      const qs = sp.toString();
-      const base = storefrontResultsPath(pathname);
-      return qs ? `${base}?${qs}` : base;
+      return shopHref({
+        search: q || null,
+        categorySlug: slug || null,
+        brand: null,
+        sort: null,
+        page: null,
+      });
     },
-    [categoryId, categories, pathname]
+    [categoryId, categories]
   );
 
   const persistRecentTerm = useCallback(async (term: string) => {
@@ -134,26 +143,27 @@ function AmazonSearchFields({
     try {
       await fetch("/api/store/search/recent", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ term: t }),
       });
     } catch {
       /* ignore */
     }
-    void refreshRecent();
+    await refreshRecent();
   }, [refreshRecent]);
 
-  const submitSearch = useCallback(() => {
+  const submitSearch = useCallback(async () => {
     const q = query.trim();
-    if (q) void persistRecentTerm(q);
+    if (q) await persistRecentTerm(q);
     router.push(buildResultsUrl(query));
     setOpen(false);
   }, [query, router, buildResultsUrl, persistRecentTerm]);
 
   const applyRecentTerm = useCallback(
-    (term: string) => {
+    async (term: string) => {
       setQuery(term);
-      void persistRecentTerm(term);
+      await persistRecentTerm(term);
       router.push(buildResultsUrl(term));
       setOpen(false);
     },
@@ -164,6 +174,7 @@ function AmazonSearchFields({
     (term: string) => {
       fetch(`/api/store/search/recent?term=${encodeURIComponent(term)}`, {
         method: "DELETE",
+        credentials: "same-origin",
       })
         .then(() => refreshRecent())
         .catch(() => {});
@@ -172,7 +183,7 @@ function AmazonSearchFields({
   );
 
   const clearAllRecent = useCallback(() => {
-    fetch("/api/store/search/recent", { method: "DELETE" })
+    fetch("/api/store/search/recent", { method: "DELETE", credentials: "same-origin" })
       .then(() => refreshRecent())
       .catch(() => {});
   }, [refreshRecent]);
@@ -191,7 +202,7 @@ function AmazonSearchFields({
         className="flex h-10 w-full max-w-3xl items-stretch overflow-hidden rounded-md border border-border bg-background shadow-sm sm:h-11"
         onSubmit={(e) => {
           e.preventDefault();
-          submitSearch();
+          void submitSearch();
         }}
       >
         <div
@@ -266,14 +277,26 @@ function AmazonSearchFields({
         </button>
       </form>
 
-      {open &&
-        (filteredRecent.length > 0 || query.trim().length >= 1 || loading) && (
+      {open && (
         <div
           id="store-search-suggestions"
           className="absolute left-0 right-0 top-[calc(100%+4px)] z-[60] max-h-[min(70vh,420px)] overflow-y-auto rounded-md border border-border bg-card py-1 shadow-lg"
           role="listbox"
           aria-label="Search suggestions"
         >
+          {recentLoading && filteredRecent.length === 0 && query.trim().length < 1 && (
+            <p className="px-4 py-3 text-sm text-muted-foreground">
+              Loading recent searches…
+            </p>
+          )}
+          {!recentLoading &&
+            filteredRecent.length === 0 &&
+            query.trim().length < 1 &&
+            !loading && (
+              <p className="px-4 py-3 text-sm text-muted-foreground">
+                No recent searches yet. Submit a search to save it here.
+              </p>
+            )}
           {filteredRecent.length > 0 && (
             <div className="border-b border-border pb-1">
               <div className="flex items-center justify-between gap-2 px-3 py-1.5">
@@ -297,7 +320,7 @@ function AmazonSearchFields({
                     type="button"
                     role="option"
                     className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted/80"
-                    onClick={() => applyRecentTerm(term)}
+                    onClick={() => void applyRecentTerm(term)}
                   >
                     <History
                       className="h-4 w-4 shrink-0 text-muted-foreground"
@@ -368,7 +391,7 @@ function AmazonSearchFields({
             </Link>
           ))}
         </div>
-        )}
+      )}
     </div>
   );
 }
@@ -381,7 +404,6 @@ function AmazonSearchBarInner({
   className?: string;
 }) {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const urlSearch = searchParams.get("search") ?? "";
   const urlCategorySlug = searchParams.get("categorySlug") ?? "";
   const initialCategoryId = urlCategorySlug
@@ -395,7 +417,6 @@ function AmazonSearchBarInner({
       className={className}
       initialQuery={urlSearch}
       initialCategoryId={initialCategoryId}
-      pathname={pathname}
     />
   );
 }

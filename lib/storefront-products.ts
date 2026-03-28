@@ -1,11 +1,15 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+export type StorefrontSort = "newest" | "price_asc" | "price_desc";
+
 /** Query params accepted by `GET /api/store/products` and storefront SSR. */
 export type StorefrontProductFilters = {
   search?: string;
   categoryId?: string;
   categorySlug?: string;
+  brandSlug?: string;
+  sort?: StorefrontSort;
 };
 
 export const storefrontProductInclude = {
@@ -49,6 +53,16 @@ export async function buildStorefrontProductWhere(
       { category: { name: { contains: search, mode: "insensitive" } } },
     ];
   }
+
+  const brandSlug = filters.brandSlug?.trim();
+  if (brandSlug) {
+    const brand = await prisma.brand.findUnique({
+      where: { slug: brandSlug },
+      select: { id: true },
+    });
+    if (brand) where.brandId = brand.id;
+  }
+
   return where;
 }
 
@@ -64,6 +78,13 @@ export async function fetchStorefrontProducts(params: {
   const page = params.page ?? 1;
   const limit = params.limit ?? 12;
   const where = await buildStorefrontProductWhere(params);
+  const sort: StorefrontSort = params.sort ?? "newest";
+  const orderBy =
+    sort === "price_asc"
+      ? ({ price: "asc" } as const)
+      : sort === "price_desc"
+        ? ({ price: "desc" } as const)
+        : ({ createdAt: "desc" } as const);
 
   const [rows, total] = await Promise.all([
     prisma.product.findMany({
@@ -71,7 +92,7 @@ export async function fetchStorefrontProducts(params: {
       skip: (page - 1) * limit,
       take: limit,
       include: storefrontProductInclude,
-      orderBy: { createdAt: "desc" },
+      orderBy,
     }),
     prisma.product.count({ where }),
   ]);

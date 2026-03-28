@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import type { StorefrontSort } from "@/lib/storefront-products";
 import {
   fetchStorefrontProducts,
   serializeStorefrontProductForJson,
@@ -11,6 +12,13 @@ const querySchema = z.object({
   search: z.string().optional(),
   categoryId: z.string().optional(),
   categorySlug: z.string().optional(),
+  brand: z.string().optional(),
+  sort: z
+    .string()
+    .optional()
+    .transform((s): StorefrontSort | undefined =>
+      s === "price_asc" || s === "price_desc" ? s : undefined
+    ),
 });
 
 /** Public API: list active products for storefront. Filtering rules live in `@/lib/storefront-products`. */
@@ -23,10 +31,20 @@ export async function GET(req: Request) {
       search: searchParams.get("search") ?? undefined,
       categoryId: searchParams.get("categoryId") ?? undefined,
       categorySlug: searchParams.get("categorySlug") ?? undefined,
+      brand: searchParams.get("brand") ?? undefined,
+      sort: searchParams.get("sort") ?? undefined,
     });
-    const { page, limit, search, categoryId, categorySlug } = parsed.success
+    const { page, limit, search, categoryId, categorySlug, brand, sort } = parsed.success
       ? parsed.data
-      : { page: 1, limit: 12, search: undefined, categoryId: undefined, categorySlug: undefined };
+      : {
+          page: 1,
+          limit: 12,
+          search: undefined,
+          categoryId: undefined,
+          categorySlug: undefined,
+          brand: undefined,
+          sort: undefined,
+        };
 
     const { rows, total } = await fetchStorefrontProducts({
       page,
@@ -34,6 +52,8 @@ export async function GET(req: Request) {
       search,
       categoryId,
       categorySlug,
+      brandSlug: brand,
+      sort: sort as StorefrontSort | undefined,
     });
 
     return NextResponse.json({
