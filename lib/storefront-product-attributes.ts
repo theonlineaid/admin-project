@@ -1,37 +1,29 @@
-import { getTranslated } from "@/lib/attribute-i18n";
-import type { LocaleCode } from "@/lib/locales";
-import { DEFAULT_LOCALE } from "@/lib/locales";
-
 type ProductAttributeRow = {
   id: string;
   attribute: {
     name: string;
-    nameTranslations: unknown;
     type: string;
     sortOrder: number;
   };
   attributeOption: {
     value: string;
-    valueTranslations: unknown;
   } | null;
   valueText: string | null;
 };
 
-/** Text / number attributes only (for a small “details” section — not select options). */
+/** Text / number attributes only (small “details” section — not select chips). */
 export function buildStorefrontAttributeRows(
   productAttributes: ProductAttributeRow[],
-  locale: LocaleCode = DEFAULT_LOCALE,
 ): { id: string; label: string; value: string }[] {
   const rows: { id: string; label: string; value: string }[] = [];
   for (const pa of productAttributes) {
     if (pa.attribute.type === "select") continue;
-    const label = getTranslated(
-      pa.attribute.nameTranslations,
-      locale,
-      pa.attribute.name,
-    );
     if (pa.valueText?.trim()) {
-      rows.push({ id: pa.id, label, value: pa.valueText.trim() });
+      rows.push({
+        id: pa.id,
+        label: pa.attribute.name,
+        value: pa.valueText.trim(),
+      });
     }
   }
   return rows;
@@ -41,13 +33,14 @@ type SelectPA = {
   attributeOptionId: string | null;
   attribute: {
     id: string;
+    slug: string;
     type: string;
     name: string;
-    nameTranslations: unknown;
     options: Array<{
       id: string;
       value: string;
-      valueTranslations: unknown;
+      slug: string | null;
+      hex: string | null;
     }>;
   };
 };
@@ -75,25 +68,35 @@ function optionIdToSlugMap(
   return m;
 }
 
-/** Select-type attributes as option chips; `href` is product slug when another variant exists (same name + category). */
+/** Select-type attributes for option chips / swatches; `slug` on option is product slug when in stock as a variant row. */
 export function buildProductSelectAttributeGroups(params: {
   currentSlug: string;
-  locale?: LocaleCode;
   productAttributes: SelectPA[];
   siblings: SiblingRow[];
 }): {
   attributeId: string;
+  attributeSlug: string;
   label: string;
   selectedOptionId: string;
-  options: { id: string; label: string; slug: string | null }[];
+  options: {
+    id: string;
+    label: string;
+    slug: string | null;
+    hex: string | null;
+  }[];
 }[] {
-  const { currentSlug, locale = DEFAULT_LOCALE, productAttributes, siblings } =
-    params;
+  const { currentSlug, productAttributes, siblings } = params;
   const groups: {
     attributeId: string;
+    attributeSlug: string;
     label: string;
     selectedOptionId: string;
-    options: { id: string; label: string; slug: string | null }[];
+    options: {
+      id: string;
+      label: string;
+      slug: string | null;
+      hex: string | null;
+    }[];
   }[] = [];
 
   for (const pa of productAttributes) {
@@ -101,11 +104,6 @@ export function buildProductSelectAttributeGroups(params: {
       continue;
     }
     const selectedId = pa.attributeOptionId ?? "";
-    const label = getTranslated(
-      pa.attribute.nameTranslations,
-      locale,
-      pa.attribute.name,
-    );
     const slugByOption = optionIdToSlugMap(
       pa.attribute.id,
       currentSlug,
@@ -114,12 +112,14 @@ export function buildProductSelectAttributeGroups(params: {
     );
     const options = pa.attribute.options.map((opt) => ({
       id: opt.id,
-      label: getTranslated(opt.valueTranslations, locale, opt.value),
+      label: opt.value,
       slug: slugByOption.get(opt.id) ?? null,
+      hex: opt.hex,
     }));
     groups.push({
       attributeId: pa.attribute.id,
-      label,
+      attributeSlug: pa.attribute.slug,
+      label: pa.attribute.name,
       selectedOptionId: selectedId,
       options,
     });
@@ -127,35 +127,24 @@ export function buildProductSelectAttributeGroups(params: {
   return groups;
 }
 
-/** One-line snapshot of all attribute values for order lines / invoices (default locale). */
+/** One-line snapshot for order lines / invoices, e.g. "Size: Medium · Color: Black". */
 export function formatOrderItemVariantSummary(product: {
   productAttributes: Array<{
     attribute: {
       name: string;
-      nameTranslations: unknown;
       type: string;
     };
     attributeOption: {
       value: string;
-      valueTranslations: unknown;
     } | null;
     valueText: string | null;
   }>;
 }): string | null {
   const parts: string[] = [];
   for (const pa of product.productAttributes) {
-    const label = getTranslated(
-      pa.attribute.nameTranslations,
-      DEFAULT_LOCALE,
-      pa.attribute.name,
-    );
+    const label = pa.attribute.name;
     if (pa.attribute.type === "select" && pa.attributeOption) {
-      const val = getTranslated(
-        pa.attributeOption.valueTranslations,
-        DEFAULT_LOCALE,
-        pa.attributeOption.value,
-      );
-      parts.push(`${label}: ${val}`);
+      parts.push(`${label}: ${pa.attributeOption.value}`);
     } else if (pa.valueText?.trim()) {
       parts.push(`${label}: ${pa.valueText.trim()}`);
     }

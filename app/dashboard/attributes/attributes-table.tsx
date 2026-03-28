@@ -6,21 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
-import { LOCALES } from "@/lib/locales";
+import { Plus, Trash2 } from "lucide-react";
 import { DataGrid, GridActionsEditDelete } from "@/components/dashboard/data-grid";
 
 type AttributeOption = {
   id?: string;
   value: string;
+  slug?: string | null;
+  hex?: string | null;
   sortOrder?: number;
-  valueTranslations?: Record<string, string>;
 };
 
 type Attribute = {
   id: string;
   name: string;
-  nameTranslations?: Record<string, string> | null;
   slug: string;
   type: string;
   sortOrder: number;
@@ -28,7 +27,21 @@ type Attribute = {
   _count?: { productAttributes: number };
 };
 
-type OptionRow = { value: string; valueTranslations: Record<string, string> };
+type OptionRow = { value: string; slug: string; hex: string };
+
+async function formatApiError(res: Response): Promise<string> {
+  const j = (await res.json().catch(() => ({}))) as {
+    error?: string | Record<string, string[] | string>;
+  };
+  if (typeof j.error === "string") return j.error;
+  if (j.error && typeof j.error === "object") {
+    const lines = Object.entries(j.error).flatMap(([k, v]) =>
+      Array.isArray(v) ? v.map((x) => `${k}: ${x}`) : [`${k}: ${String(v)}`],
+    );
+    if (lines.length) return lines.join("\n");
+  }
+  return `Request failed (${res.status})`;
+}
 
 function optionsSummary(row: Attribute | undefined): string {
   if (!row) return "";
@@ -42,8 +55,8 @@ function optionsSummary(row: Attribute | undefined): string {
 }
 
 const attributeColumnDefs: ColDef<Attribute>[] = [
-  { field: "name", headerName: "Name" },
-  { field: "slug", headerName: "Slug" },
+  { field: "name", headerName: "Label" },
+  { field: "slug", headerName: "Key" },
   { field: "type", headerName: "Type", maxWidth: 120, flex: 0 },
   {
     colId: "optionsSummary",
@@ -72,8 +85,6 @@ export function AttributesTable() {
   const [slug, setSlug] = useState("");
   const [type, setType] = useState<"select" | "text" | "number">("select");
   const [options, setOptions] = useState<OptionRow[]>([]);
-  const [nameTranslations, setNameTranslations] = useState<Record<string, string>>({});
-  const [showTranslations, setShowTranslations] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(() => {
@@ -90,9 +101,7 @@ export function AttributesTable() {
     setName("");
     setSlug("");
     setType("select");
-    setOptions([{ value: "", valueTranslations: {} }]);
-    setNameTranslations({});
-    setShowTranslations(false);
+    setOptions([{ value: "", slug: "", hex: "" }]);
     setOpen(true);
   }
 
@@ -105,49 +114,67 @@ export function AttributesTable() {
       a.options?.length
         ? a.options.map((o) => ({
             value: o.value,
-            valueTranslations: (o.valueTranslations as Record<string, string>) ?? {},
+            slug: o.slug ?? "",
+            hex: o.hex ?? "",
           }))
-        : [{ value: "", valueTranslations: {} }]
+        : [{ value: "", slug: "", hex: "" }],
     );
-    setNameTranslations((a.nameTranslations as Record<string, string>) ?? {});
-    setShowTranslations(false);
     setOpen(true);
   }, []);
 
   function addOption() {
-    setOptions((prev) => [...prev, { value: "", valueTranslations: {} }]);
+    setOptions((prev) => [...prev, { value: "", slug: "", hex: "" }]);
   }
 
   function removeOption(i: number) {
     setOptions((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  function setOptionValue(i: number, value: string) {
+  function patchOption(i: number, patch: Partial<OptionRow>) {
     setOptions((prev) => {
       const next = [...prev];
-      next[i] = { ...next[i], value };
+      next[i] = { ...next[i]!, ...patch };
       return next;
     });
   }
 
-  function setNameTranslation(locale: string, value: string) {
-    setNameTranslations((prev) => {
-      const next = { ...prev };
-      if (value.trim()) next[locale] = value;
-      else delete next[locale];
-      return next;
-    });
+  function presetClothingSizes() {
+    setName("Size");
+    setSlug("clothing-size");
+    setType("select");
+    setOptions(
+      ["S", "M", "L", "XL", "XXL"].map((v) => ({
+        value: v,
+        slug: v.toLowerCase(),
+        hex: "",
+      })),
+    );
   }
 
-  function setOptionValueTranslation(optionIndex: number, locale: string, value: string) {
-    setOptions((prev) => {
-      const next = [...prev];
-      const trans = { ...(next[optionIndex].valueTranslations ?? {}) };
-      if (value.trim()) trans[locale] = value;
-      else delete trans[locale];
-      next[optionIndex] = { ...next[optionIndex], valueTranslations: trans };
-      return next;
-    });
+  function presetEuShoesFull() {
+    setName("EU shoe size");
+    setSlug("eu-shoe-size");
+    setType("select");
+    setOptions(
+      Array.from({ length: 13 }, (_, i) => String(36 + i)).map((v) => ({
+        value: v,
+        slug: v,
+        hex: "",
+      })),
+    );
+  }
+
+  function presetSneakerRange() {
+    setName("EU shoe size");
+    setSlug("eu-sneaker-size");
+    setType("select");
+    setOptions(
+      ["40", "41", "42", "43", "44", "45"].map((v) => ({
+        value: v,
+        slug: v,
+        hex: "",
+      })),
+    );
   }
 
   async function save() {
@@ -155,33 +182,32 @@ export function AttributesTable() {
     if (!trimmedName) return;
     const opts =
       type === "select"
-        ? options.map((o) => ({ value: o.value.trim(), valueTranslations: o.valueTranslations })).filter((o) => o.value)
+        ? options
+            .map((o) => ({
+              value: o.value.trim(),
+              slug: o.slug.trim() || null,
+              hex: o.hex.trim() || null,
+            }))
+            .filter((o) => o.value)
         : [];
+    if (type === "select" && opts.length === 0) {
+      alert(
+        "Select attributes need at least one value. Fill the Name column or click a quick template (Clothing / Shoes).",
+      );
+      return;
+    }
     setLoading(true);
     const url = edit ? `/api/attributes/${edit.id}` : "/api/attributes";
     const method = edit ? "PUT" : "POST";
-    const nameTrans =
-      Object.keys(nameTranslations).length > 0
-        ? Object.fromEntries(
-            Object.entries(nameTranslations).filter(([, v]) => v != null && String(v).trim() !== "")
-          )
-        : undefined;
     const body: Record<string, unknown> = {
       name: trimmedName,
       type,
-      nameTranslations: nameTrans,
       options:
         type === "select" && opts.length
           ? opts.map((o) => ({
               value: o.value,
-              valueTranslations:
-                Object.keys(o.valueTranslations ?? {}).length > 0
-                  ? Object.fromEntries(
-                      Object.entries(o.valueTranslations ?? {}).filter(
-                        ([, v]) => v != null && String(v).trim() !== ""
-                      )
-                    )
-                  : undefined,
+              slug: o.slug,
+              hex: o.hex,
             }))
           : undefined,
     };
@@ -196,8 +222,7 @@ export function AttributesTable() {
       setOpen(false);
       load();
     } else {
-      const err = await res.json();
-      alert(err.error?.name?.join?.(" ") || err.error || "Failed to save");
+      alert(await formatApiError(res));
     }
   }
 
@@ -206,9 +231,9 @@ export function AttributesTable() {
       if (!confirm("Delete this attribute? Product values for this attribute will be removed.")) return;
       const res = await fetch(`/api/attributes/${id}`, { method: "DELETE" });
       if (res.ok) load();
-      else alert("Failed to delete");
+      else alert(await formatApiError(res));
     },
-    [load]
+    [load],
   );
 
   const gridContext = useMemo(
@@ -218,14 +243,14 @@ export function AttributesTable() {
         void remove(id);
       },
     }),
-    [openEdit, remove]
+    [openEdit, remove],
   );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Add attribute
         </Button>
       </div>
@@ -238,23 +263,46 @@ export function AttributesTable() {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <div className="max-w-md">
+        <div className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{edit ? "Edit attribute" : "New attribute"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>Label (shown on storefront)</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Clothing Size, Sneaker Size, Weight"
+                placeholder='e.g. "Size", "Color"'
               />
             </div>
             <div className="space-y-2">
-              <Label>Slug (optional)</Label>
-              <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="auto-generated if empty" />
+              <Label>Key / slug (optional)</Label>
+              <Input
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="e.g. clothing-size, eu-shoe-size (must be unique)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use a different key for each kind of size (shirts vs sneakers) so nothing collides with &quot;size&quot;.
+              </p>
             </div>
+            {type === "select" && (
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <p className="mb-2 text-xs font-medium text-foreground">Quick templates</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="secondary" size="sm" onClick={presetClothingSizes}>
+                    Clothing S–XXL
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" onClick={presetEuShoesFull}>
+                    Shoes EU 36–48
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" onClick={presetSneakerRange}>
+                    Sneakers 40–45
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Type</Label>
               <select
@@ -262,81 +310,69 @@ export function AttributesTable() {
                 value={type}
                 onChange={(e) => setType(e.target.value as "select" | "text" | "number")}
               >
-                <option value="select">Select (predefined options, e.g. S, M, L)</option>
-                <option value="text">Text (free text per product)</option>
-                <option value="number">Number (e.g. weight in kg)</option>
+                <option value="select">Select (S, M, L or color names)</option>
+                <option value="text">Text</option>
+                <option value="number">Number</option>
               </select>
             </div>
             {type === "select" && (
               <div className="space-y-2">
-                <Label>Options (one per product choice)</Label>
+                <Label>Values</Label>
+                <p className="text-xs text-muted-foreground">
+                  Name = button label. Optional slug for APIs; hex (#RRGGBB) shows a color dot on the product page.
+                </p>
                 <div className="space-y-2">
                   {options.map((opt, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input
-                        value={opt.value}
-                        onChange={(e) => setOptionValue(i, e.target.value)}
-                        placeholder="e.g. S, M, L or 38, 39, 40"
-                      />
-                      <Button type="button" variant="outline" size="icon" onClick={() => removeOption(i)} aria-label="Remove option">
+                    <div key={i} className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:flex-wrap sm:items-end">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <span className="text-xs text-muted-foreground">Name</span>
+                        <Input
+                          value={opt.value}
+                          onChange={(e) => patchOption(i, { value: e.target.value })}
+                          placeholder="Small, Medium, Black…"
+                        />
+                      </div>
+                      <div className="w-full space-y-1 sm:w-24">
+                        <span className="text-xs text-muted-foreground">Slug</span>
+                        <Input
+                          value={opt.slug}
+                          onChange={(e) => patchOption(i, { slug: e.target.value })}
+                          placeholder="s, m"
+                        />
+                      </div>
+                      <div className="w-full space-y-1 sm:w-28">
+                        <span className="text-xs text-muted-foreground">Hex</span>
+                        <Input
+                          value={opt.hex}
+                          onChange={(e) => patchOption(i, { hex: e.target.value })}
+                          placeholder="#000000"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={() => removeOption(i)}
+                        aria-label="Remove option"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
                   <Button type="button" variant="outline" size="sm" onClick={addOption}>
-                    <Plus className="h-4 w-4 mr-1" /> Add option
+                    <Plus className="mr-1 h-4 w-4" /> Add value
                   </Button>
                 </div>
               </div>
             )}
-            <div className="border-t border-border pt-3">
-              <button
-                type="button"
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                onClick={() => setShowTranslations((v) => !v)}
-              >
-                {showTranslations ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                Multi-language translations (optional)
-              </button>
-              {showTranslations && (
-                <div className="mt-3 space-y-4 pl-0">
-                  <p className="text-xs text-muted-foreground">
-                    Default name and option values above are used when no translation exists. Add translations for other locales.
-                  </p>
-                  {LOCALES.filter((l) => l.code !== "en").map((loc) => (
-                    <div key={loc.code} className="space-y-2 rounded-md border border-border p-3">
-                      <Label className="text-muted-foreground">
-                        {loc.name} ({loc.code})
-                      </Label>
-                      <Input
-                        placeholder={`Attribute name in ${loc.name}`}
-                        value={nameTranslations[loc.code] ?? ""}
-                        onChange={(e) => setNameTranslation(loc.code, e.target.value)}
-                      />
-                      {type === "select" &&
-                        options.map(
-                          (opt, i) =>
-                            opt.value && (
-                              <Input
-                                key={i}
-                                placeholder={`"${opt.value}" in ${loc.name}`}
-                                value={opt.valueTranslations?.[loc.code] ?? ""}
-                                onChange={(e) => setOptionValueTranslation(i, loc.code, e.target.value)}
-                              />
-                            )
-                        )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button onClick={save} disabled={loading}>
-              {loading ? "Saving..." : "Save"}
+              {loading ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </div>

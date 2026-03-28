@@ -59,10 +59,10 @@ export async function POST(req: Request) {
           orderBy: { attribute: { sortOrder: "asc" } },
           include: {
             attribute: {
-              select: { name: true, nameTranslations: true, type: true },
+              select: { name: true, type: true },
             },
             attributeOption: {
-              select: { value: true, valueTranslations: true },
+              select: { value: true },
             },
           },
         },

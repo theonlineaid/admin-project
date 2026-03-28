@@ -6,7 +6,8 @@ export default function AttributesPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Attributes</h1>
         <p className="text-muted-foreground mt-1">
-          Manage product attributes (e.g. Clothing Size, Sneaker Size, Weight). Add them to products in the product form.
+          Create one attribute per kind of choice: e.g. &quot;Size&quot; with key <code className="rounded bg-muted px-1 text-xs">clothing-size</code> for shirts, and another &quot;EU shoe size&quot; with key{" "}
+          <code className="rounded bg-muted px-1 text-xs">eu-shoe-size</code> for sneakers. You do not need color if you only sell sizes. On each product, pick only the values that apply.
         </p>
       </div>
       <AttributesTable />

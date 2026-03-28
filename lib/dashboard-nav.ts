@@ -33,6 +33,7 @@ export const adminNav: NavItem[] = [
 export const sellerNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", key: "dashboard", icon: LayoutDashboard },
   { href: "/dashboard/products", label: "Products", key: "products", icon: Package },
+  { href: "/dashboard/attributes", label: "Attributes", key: "attributes", icon: ListChecks },
   { href: "/dashboard/orders", label: "Orders", key: "orders", icon: ShoppingCart },
 ];
 

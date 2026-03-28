@@ -200,28 +200,28 @@ model Product {
   productAttributes ProductAttribute[]
 }
 
-// Product attributes (e.g. Clothing Size, Sneaker Size, Weight). name/value are default (e.g. en); translations for other locales.
+// Product attributes (e.g. size, color). `Attribute.slug` ≈ "size" | "color"; option `slug`/`hex` for URLs and color UI.
 model Attribute {
-  id                String   @id @default(cuid())
-  name              String   // default language label, e.g. "Clothing Size"
-  nameTranslations  Json?    // { "es": "Talla", "fr": "Taille", ... } – keys: locale code
-  slug              String   @unique
-  type              String   // "select" | "text" | "number" – select uses predefined options
-  sortOrder         Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String   // display label, e.g. "Size", "Color"
+  slug      String   @unique
+  type      String   // "select" | "text" | "number" – select uses predefined options
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   options   AttributeOption[]
   productAttributes ProductAttribute[]
 }
 
 model AttributeOption {
-  id                String   @id @default(cuid())
-  attributeId       String
-  value             String   // default language, e.g. "S", "M", "L"
-  valueTranslations Json?    // { "es": "S", "fr": "S", ... } – optional per-locale label
-  sortOrder         Int      @default(0)
-  createdAt         DateTime @default(now())
+  id          String   @id @default(cuid())
+  attributeId String
+  value       String   // display name, e.g. "Small", "Black"
+  slug        String?  // optional stable key, e.g. "s", "black"
+  hex         String?  // optional #RRGGBB for color swatches on storefront
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
 
   attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   productAttributes ProductAttribute[]

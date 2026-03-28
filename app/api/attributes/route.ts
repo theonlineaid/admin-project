@@ -1,13 +1,18 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession, requireAdmin } from "@/lib/api-utils";
-import { getTranslated } from "@/lib/attribute-i18n";
-import { isValidLocale } from "@/lib/locales";
+import { getSession, requireSellerOrAdmin } from "@/lib/api-utils";
+import { resolveAttributeSlug } from "@/lib/attribute-slug";
 import { z } from "zod";
+
+function normalizeOptionHex(s: string | null | undefined): string | null {
+  const t = typeof s === "string" ? s.trim() : "";
+  if (!t) return null;
+  return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(t) ? t : null;
+}
 
 const createSchema = z.object({
   name: z.string().min(1),
-  nameTranslations: z.record(z.string(), z.string()).optional(),
   slug: z.string().min(1).optional(),
   type: z.enum(["select", "text", "number"]),
   sortOrder: z.number().int().optional(),
@@ -15,22 +20,19 @@ const createSchema = z.object({
     .array(
       z.object({
         value: z.string().min(1),
-        valueTranslations: z.record(z.string(), z.string()).optional(),
-      })
+        slug: z.string().optional().nullable(),
+        hex: z.string().optional().nullable(),
+      }),
     )
     .optional(),
 });
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await getSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { searchParams } = new URL(req.url);
-    const locale = searchParams.get("locale") ?? undefined;
-    const useLocale = locale && isValidLocale(locale) ? locale : null;
 
     const attributes = await prisma.attribute.findMany({
       include: {
@@ -40,23 +42,12 @@ export async function GET(req: Request) {
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
 
-    if (useLocale) {
-      const translated = attributes.map((attr) => ({
-        ...attr,
-        name: getTranslated(attr.nameTranslations, useLocale, attr.name),
-        options: attr.options.map((opt) => ({
-          ...opt,
-          value: getTranslated(opt.valueTranslations, useLocale, opt.value),
-        })),
-      }));
-      return NextResponse.json(translated);
-    }
     return NextResponse.json(attributes);
   } catch (e) {
     console.error(e);
     return NextResponse.json(
       { error: "Failed to fetch attributes" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -64,7 +55,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getSession();
-    const forbidden = requireAdmin(session);
+    const forbidden = requireSellerOrAdmin(session);
     if (forbidden) return forbidden;
 
     const body = await req.json();
@@ -72,23 +63,28 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const slug =
-      parsed.data.slug ??
-      parsed.data.name
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w-]+/g, "");
+    if (
+      parsed.data.type === "select" &&
+      (!parsed.data.options || parsed.data.options.length === 0)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Select attributes need at least one value (e.g. M, L, XL or 40, 41, 42). Add a row under Values.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const slug = resolveAttributeSlug(parsed.data.name, parsed.data.slug);
 
     const attribute = await prisma.attribute.create({
       data: {
         name: parsed.data.name,
-        nameTranslations: parsed.data.nameTranslations
-          ? (parsed.data.nameTranslations as object)
-          : undefined,
         slug,
         type: parsed.data.type,
         sortOrder: parsed.data.sortOrder ?? 0,
@@ -97,9 +93,8 @@ export async function POST(req: Request) {
             ? {
                 create: parsed.data.options.map((o, i) => ({
                   value: o.value,
-                  valueTranslations: o.valueTranslations
-                    ? (o.valueTranslations as object)
-                    : undefined,
+                  slug: o.slug?.trim() || null,
+                  hex: normalizeOptionHex(o.hex ?? undefined),
                   sortOrder: i,
                 })),
               }
@@ -110,9 +105,18 @@ export async function POST(req: Request) {
     return NextResponse.json(attribute);
   } catch (e) {
     console.error(e);
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return NextResponse.json(
+        {
+          error:
+            "That key (slug) is already used. Set a different “Key / slug” — e.g. clothing-size for shirts and eu-shoe-size for sneakers.",
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
       { error: "Failed to create attribute" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

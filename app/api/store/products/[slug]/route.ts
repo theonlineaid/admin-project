@@ -20,7 +20,6 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                nameTranslations: true,
                 type: true,
                 slug: true,
                 sortOrder: true,
@@ -29,7 +28,8 @@ export async function GET(
                   select: {
                     id: true,
                     value: true,
-                    valueTranslations: true,
+                    slug: true,
+                    hex: true,
                     sortOrder: true,
                   },
                 },
@@ -39,7 +39,8 @@ export async function GET(
               select: {
                 id: true,
                 value: true,
-                valueTranslations: true,
+                slug: true,
+                hex: true,
                 sortOrder: true,
               },
             },

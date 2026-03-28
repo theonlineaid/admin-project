@@ -15,18 +15,18 @@ const productAttributeInclude = {
     attribute: {
       select: {
         id: true,
+        slug: true,
         name: true,
-        nameTranslations: true,
         type: true,
         sortOrder: true,
         options: {
           orderBy: { sortOrder: "asc" as const },
-          select: { id: true, value: true, valueTranslations: true },
+          select: { id: true, value: true, slug: true, hex: true },
         },
       },
     },
     attributeOption: {
-      select: { id: true, value: true, valueTranslations: true },
+      select: { id: true, value: true, slug: true, hex: true },
     },
   },
 } as const;
