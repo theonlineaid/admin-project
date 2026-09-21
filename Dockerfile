@@ -51,12 +51,11 @@ RUN echo '#!/bin/sh' > /app/wait.sh && \
     echo 'for i in 1 2 3 4 5 6 7 8 9 10; do npx prisma db push --accept-data-loss 2>/dev/null && exit 0; sleep 2; done; exit 1' >> /app/wait.sh && \
     chmod +x /app/wait.sh
 
-RUN chown -R nextjs:nodejs /app
+COPY docker-entrypoint.sh ./
+RUN chmod +x /app/docker-entrypoint.sh && chown -R nextjs:nodejs /app
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-COPY docker-entrypoint.sh ./
-RUN chmod +x /app/docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]
