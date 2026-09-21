@@ -12,6 +12,12 @@ export default auth((req) => {
   if (isDashboard && !req.auth) {
     return Response.redirect(new URL("/login", req.nextUrl));
   }
+  if (isDashboard && req.auth) {
+    const role = (req.auth.user as { role?: string } | undefined)?.role;
+    if (role === "customer") {
+      return Response.redirect(new URL("/", req.nextUrl));
+    }
+  }
 });
 
 export const config = {

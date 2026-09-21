@@ -330,3 +330,8 @@ html[data-density="compact"] .p-4 { padding: var(--card-padding) !important; }
 html[data-density="compact"] .space-y-4 > * + * { margin-top: var(--section-gap) !important; }
 html[data-density="compact"] .space-y-2 > * + * { margin-top: 0.375rem !important; }
 html[data-density="compact"] main { padding: var(--content-padding) !important; }
+
+/* Storefront: headline/section-title face, distinct from the Geist UI text used elsewhere */
+.font-display {
+  font-family: "DM Sans", var(--font-sans);
+}
