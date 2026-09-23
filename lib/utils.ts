@@ -27,3 +27,7 @@ export function slugify(text: string): string {
     .replace(/--+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+export function getDiscountPercent(price: number, compareAt: number | null): number | null {
+  return compareAt && compareAt > price ? Math.round(((compareAt - price) / compareAt) * 100) : null;
+}

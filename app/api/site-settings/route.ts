@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const HEADER_VARIANTS = ["1", "2", "3", "4", "5"] as const;
 const FOOTER_VARIANTS = ["1", "2", "3", "4", "5"] as const;
+const HOME_VARIANTS = ["1", "2", "3", "4", "5"] as const;
 
 const topbarItemSchema = z.object({
   id: z.string(),
@@ -19,9 +20,10 @@ const updateSchema = z.object({
   siteTitle: z.string().min(1).optional().nullable(),
   headerVariant: z.enum(HEADER_VARIANTS).optional().nullable(),
   footerVariant: z.enum(FOOTER_VARIANTS).optional().nullable(),
+  homeVariant: z.enum(HOME_VARIANTS).optional().nullable(),
   topbarEnabled: z.boolean().optional(),
   topbarItems: z.array(topbarItemSchema).optional().nullable(),
-  bannerUrls: z.array(z.string().url()).min(3).max(5).optional().nullable(),
+  bannerUrls: z.array(z.string().url()).min(1).max(5).optional().nullable(),
 });
 
 export async function GET() {
@@ -35,6 +37,7 @@ export async function GET() {
           siteTitle: "E-commerce",
           headerVariant: "1",
           footerVariant: "1",
+          homeVariant: "1",
         },
       });
       return NextResponse.json(created);
@@ -73,6 +76,7 @@ export async function PATCH(req: Request) {
           siteTitle: "E-commerce",
           headerVariant: "1",
           footerVariant: "1",
+          homeVariant: "1",
         },
       });
     }
@@ -83,6 +87,7 @@ export async function PATCH(req: Request) {
       ...(parsed.data.siteTitle !== undefined && { siteTitle: parsed.data.siteTitle }),
       ...(parsed.data.headerVariant !== undefined && { headerVariant: parsed.data.headerVariant }),
       ...(parsed.data.footerVariant !== undefined && { footerVariant: parsed.data.footerVariant }),
+      ...(parsed.data.homeVariant !== undefined && { homeVariant: parsed.data.homeVariant }),
       ...(parsed.data.topbarEnabled !== undefined && { topbarEnabled: parsed.data.topbarEnabled }),
       ...(parsed.data.topbarItems !== undefined && { topbarItems: parsed.data.topbarItems as Prisma.InputJsonValue }),
       ...(parsed.data.bannerUrls !== undefined && { bannerUrls: parsed.data.bannerUrls as Prisma.InputJsonValue }),

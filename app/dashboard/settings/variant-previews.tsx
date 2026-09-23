@@ -175,3 +175,110 @@ export function FooterPreview({ variant }: { variant: string }) {
       return null;
   }
 }
+
+function Tiles({ count, className }: { count: number; className?: string }) {
+  return (
+    <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className={`aspect-square rounded-sm ${className ?? "bg-foreground/15"}`} />
+      ))}
+    </div>
+  );
+}
+
+export function HomePreview({ variant }: { variant: string }) {
+  switch (variant) {
+    case "1":
+      return (
+        <div className="w-full space-y-1.5 overflow-hidden rounded-md border border-border bg-card p-2">
+          <div className="grid grid-cols-3 gap-1 rounded-sm bg-muted p-1">
+            <div className="col-span-2 h-8 rounded-sm bg-primary/40" />
+            <div className="grid gap-1">
+              <div className="rounded-sm bg-card" />
+              <div className="rounded-sm bg-card" />
+            </div>
+          </div>
+          <div className="flex justify-between px-1">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Dot key={i} className="h-3 w-3 bg-foreground/15" />
+            ))}
+          </div>
+          <Tiles count={4} />
+        </div>
+      );
+    case "2":
+      return (
+        <div className="w-full space-y-1.5 overflow-hidden rounded-md border border-border bg-card p-2">
+          <div className="h-7 rounded-sm bg-primary/40" />
+          <div className="grid grid-cols-4 gap-1">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-3 rounded-sm border border-border" />
+            ))}
+          </div>
+          <div className="rounded-sm bg-primary/10 p-1">
+            <Tiles count={4} className="bg-primary/25" />
+          </div>
+          <Bar className="mx-auto w-12 bg-foreground/20" />
+        </div>
+      );
+    case "3":
+      return (
+        <div className="w-full space-y-1.5 overflow-hidden rounded-md border border-border bg-card p-2">
+          <div className="flex flex-col items-center gap-1 py-1">
+            <Bar className="w-16 bg-foreground/60" />
+            <Bar className="w-10 bg-foreground/25" />
+            <div className="mt-0.5 h-2 w-8 rounded-sm bg-foreground" />
+          </div>
+          <div className="flex justify-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-1.5 w-5 rounded-full border border-foreground/30" />
+            ))}
+          </div>
+          <Tiles count={3} />
+        </div>
+      );
+    case "4":
+      return (
+        <div className="w-full space-y-1.5 overflow-hidden rounded-md border border-border bg-card p-2">
+          <div className="grid grid-cols-4 gap-1">
+            <div className="space-y-0.5 rounded-sm border border-border p-0.5">
+              {[0, 1, 2, 3].map((i) => (
+                <Bar key={i} className="h-1 bg-foreground/25" />
+              ))}
+            </div>
+            <div className="col-span-3 h-8 rounded-sm bg-primary/40" />
+          </div>
+          <div className="flex gap-1 overflow-hidden">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-3 w-3 shrink-0 rounded-sm bg-foreground/15" />
+            ))}
+          </div>
+          <Tiles count={5} />
+        </div>
+      );
+    case "5":
+      return (
+        <div className="w-full space-y-1.5 overflow-hidden rounded-md border border-border bg-card p-2">
+          <div className="grid grid-cols-5 gap-1">
+            <div className="col-span-2 flex h-8 flex-col justify-center gap-0.5 rounded-sm bg-foreground px-1">
+              <Bar className="w-6 bg-background/70" />
+              <Bar className="w-4 bg-background/40" />
+            </div>
+            <div className="col-span-3 rounded-sm bg-primary/40" />
+          </div>
+          {[0, 1].map((row) => (
+            <div key={row} className="space-y-0.5">
+              <Bar className="w-8 bg-foreground/40" />
+              <div className="flex gap-1">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-3 w-3 shrink-0 rounded-sm bg-foreground/15" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    default:
+      return null;
+  }
+}

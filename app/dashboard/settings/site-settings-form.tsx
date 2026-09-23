@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Plus } from "lucide-react";
-import { HeaderPreview, FooterPreview } from "./variant-previews";
+import { HeaderPreview, FooterPreview, HomePreview } from "./variant-previews";
 import toast from "react-hot-toast";
 
 export type TopbarItem = {
@@ -15,7 +15,7 @@ export type TopbarItem = {
   value: string;
 };
 
-const MIN_BANNERS = 3;
+const MIN_BANNERS = 1;
 const MAX_BANNERS = 5;
 
 type SiteSettings = {
@@ -25,6 +25,7 @@ type SiteSettings = {
   siteTitle: string | null;
   headerVariant: string | null;
   footerVariant: string | null;
+  homeVariant: string | null;
   topbarEnabled: boolean;
   topbarItems: TopbarItem[] | null;
   bannerUrls: string[] | null;
@@ -61,6 +62,14 @@ const FOOTER_OPTIONS = [
   { value: "5", label: "Dark banded", hint: "Inverted, centered" },
 ];
 
+const HOME_OPTIONS = [
+  { value: "1", label: "Showcase", hint: "Slider + offer cards, round category icons" },
+  { value: "2", label: "Bold banner", hint: "Wide slider, category cards, deals, brands" },
+  { value: "3", label: "Minimal editorial", hint: "Big headline, category chips, 3 columns" },
+  { value: "4", label: "Marketplace", hint: "Category sidebar, scrolling product rows" },
+  { value: "5", label: "Boutique", hint: "Split hero, one row per category" },
+];
+
 async function uploadFile(file: File, folder: string): Promise<string> {
   const formData = new FormData();
   formData.set("file", file);
@@ -87,6 +96,7 @@ export function SiteSettingsForm() {
     siteTitle: "E-commerce",
     headerVariant: "1",
     footerVariant: "1",
+    homeVariant: "1",
     topbarEnabled: false,
     topbarItems: [] as TopbarItem[],
     bannerUrls: [] as string[],
@@ -111,6 +121,7 @@ export function SiteSettingsForm() {
           siteTitle: data.siteTitle ?? "E-commerce",
           headerVariant: data.headerVariant ?? "1",
           footerVariant: data.footerVariant ?? "1",
+          homeVariant: data.homeVariant ?? "1",
           topbarEnabled: data.topbarEnabled ?? false,
           topbarItems: items,
           bannerUrls: banners,
@@ -168,14 +179,18 @@ export function SiteSettingsForm() {
         const url = await uploadFile(files[i], folder);
         urls.push(url);
       }
-      setForm((prev) => {
-        const current = prev.bannerUrls;
-        const toAdd = urls.slice(0, Math.max(0, MAX_BANNERS - current.length));
-        const next = [...current, ...toAdd];
-        return { ...prev, bannerUrls: next };
-      });
+      const current = form.bannerUrls;
+      const next = [...current, ...urls.slice(0, Math.max(0, MAX_BANNERS - current.length))];
+      setForm((prev) => ({ ...prev, bannerUrls: next }));
+      await saveBannerUrls(next);
       await fetchBannerFolderImages();
-      toast.success(files.length > 1 ? "Banners uploaded" : "Banner uploaded");
+      toast.success(
+        next.length - current.length < urls.length
+          ? `Uploaded. Only ${MAX_BANNERS} banners can be shown — click an image to swap.`
+          : files.length > 1
+          ? "Banners uploaded and added to homepage"
+          : "Banner uploaded and added to homepage"
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -196,6 +211,24 @@ export function SiteSettingsForm() {
     setSettings(data);
   }
 
+  async function toggleBanner(url: string) {
+    const prevUrls = form.bannerUrls;
+    const selected = prevUrls.includes(url);
+    if (!selected && prevUrls.length >= MAX_BANNERS) {
+      toast.error(`Maximum ${MAX_BANNERS} banners. Remove one first.`);
+      return;
+    }
+    const next = selected ? prevUrls.filter((u) => u !== url) : [...prevUrls, url];
+    setForm((prev) => ({ ...prev, bannerUrls: next }));
+    try {
+      await saveBannerUrls(next);
+      toast.success(selected ? "Removed from homepage" : "Added to homepage");
+    } catch {
+      setForm((prev) => ({ ...prev, bannerUrls: prevUrls }));
+      toast.error("Failed to update banners");
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -209,6 +242,7 @@ export function SiteSettingsForm() {
           siteTitle: form.siteTitle || null,
           headerVariant: form.headerVariant,
           footerVariant: form.footerVariant,
+          homeVariant: form.homeVariant,
           topbarEnabled: form.topbarEnabled,
           topbarItems: form.topbarItems.length ? form.topbarItems : null,
           bannerUrls: form.bannerUrls.length >= MIN_BANNERS ? form.bannerUrls : null,
@@ -346,6 +380,43 @@ export function SiteSettingsForm() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Homepage</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Choose one of five homepage layouts. Banners, products and categories fill in automatically.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {HOME_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex w-48 flex-col items-center rounded-lg border-2 px-3 py-3 text-center cursor-pointer transition-colors ${
+                  form.homeVariant === opt.value
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:bg-muted/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="homeVariant"
+                  value={opt.value}
+                  checked={form.homeVariant === opt.value}
+                  onChange={() =>
+                    setForm((prev) => ({ ...prev, homeVariant: opt.value }))
+                  }
+                  className="sr-only"
+                />
+                <HomePreview variant={opt.value} />
+                <span className="mt-2 text-sm font-medium">{opt.label}</span>
+                <span className="mt-1 text-xs text-muted-foreground">{opt.hint}</span>
+              </label>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Header</CardTitle>
           <p className="text-sm text-muted-foreground">
             Choose one of five header layouts for the storefront
@@ -422,24 +493,42 @@ export function SiteSettingsForm() {
         <CardHeader>
           <CardTitle>Banner settings</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Homepage banner images (3–5 images). Uploaded to Cloudinary folder: <strong>banner</strong>
+            Homepage slider images ({MIN_BANNERS}–{MAX_BANNERS}). Uploaded to Cloudinary folder: <strong>banner</strong>
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            All images in Cloudinary folder <strong>banner</strong>. Delete or upload below. Site uses 3–5 of these (saved order).
+            Click an image to show or hide it on the homepage. Numbers show the slide order. Changes save automatically.
           </p>
           {loadingBannerFolder ? (
             <p className="text-sm text-muted-foreground">Loading banner images…</p>
           ) : (
             <div className="flex flex-wrap gap-3 items-start">
-              {bannerFolderImages.map((img) => (
+              {bannerFolderImages.map((img) => {
+                const order = form.bannerUrls.indexOf(img.secureUrl);
+                const selected = order !== -1;
+                return (
                 <div key={img.publicId} className="relative group">
-                  <img
-                    src={img.secureUrl}
-                    alt={img.publicId}
-                    className="h-24 w-40 rounded-lg border border-border object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleBanner(img.secureUrl)}
+                    aria-pressed={selected}
+                    aria-label={selected ? "Remove from homepage" : "Add to homepage"}
+                    className={`block rounded-lg ring-offset-2 ring-offset-card transition ${
+                      selected ? "ring-2 ring-primary" : "opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <img
+                      src={img.secureUrl}
+                      alt={img.publicId}
+                      className="h-24 w-40 rounded-lg border border-border object-cover"
+                    />
+                    {selected ? (
+                      <span className="absolute left-1 top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                        {order + 1}
+                      </span>
+                    ) : null}
+                  </button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -473,7 +562,8 @@ export function SiteSettingsForm() {
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
-              ))}
+                );
+              })}
               <label className="h-24 w-40 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 gap-1">
                 <input
                   type="file"
@@ -488,16 +578,11 @@ export function SiteSettingsForm() {
               </label>
             </div>
           )}
-          {form.bannerUrls.length > 0 && form.bannerUrls.length < MIN_BANNERS && (
-            <p className="text-sm text-amber-600">
-              Add at least {MIN_BANNERS - form.bannerUrls.length} more image(s) to use on site (min {MIN_BANNERS}, max {MAX_BANNERS}).
-            </p>
-          )}
-          {form.bannerUrls.length >= MIN_BANNERS && (
-            <p className="text-sm text-muted-foreground">
-              {form.bannerUrls.length} / {MAX_BANNERS} banners used on site. Order is preserved.
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">
+            {form.bannerUrls.length === 0
+              ? "No banners selected — the homepage shows the default hero."
+              : `${form.bannerUrls.length} / ${MAX_BANNERS} banners shown on the homepage.`}
+          </p>
         </CardContent>
       </Card>
 

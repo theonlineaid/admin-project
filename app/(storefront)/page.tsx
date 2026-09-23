@@ -1,43 +1,45 @@
 import {
+  getBestSellingProducts,
+  getDiscountedProducts,
+  getPromoProducts,
   getSiteSettings,
+  getStorefrontBrands,
   getStorefrontCategories,
   getStorefrontProducts,
 } from "@/lib/storefront";
-import { HeroBanner } from "@/components/storefront/hero-banner";
-import { CategorySection } from "@/components/storefront/category-nav";
-import { ProductGrid } from "@/components/storefront/product-grid";
-import Link from "next/link";
+import { HOME_VARIANTS, type HomeData } from "@/components/storefront/home/home-variants";
 
 export default async function HomePage() {
-  const [settings, categories, newest] = await Promise.all([
-    getSiteSettings(),
-    getStorefrontCategories(),
-    getStorefrontProducts({ sort: "newest", limit: 10 }),
+  const [settings, categories] = await Promise.all([getSiteSettings(), getStorefrontCategories()]);
+  const variant = (settings.homeVariant ?? "1") in HOME_VARIANTS ? settings.homeVariant ?? "1" : "1";
+  const Home = HOME_VARIANTS[variant as keyof typeof HOME_VARIANTS];
+
+  // Only the boutique layout needs a product row per category
+  const rowCategories =
+    variant === "5" ? categories.filter((c) => c._count.products > 0).slice(0, 4) : [];
+
+  const [newest, bestSellers, promos, deals, brands, rowProducts] = await Promise.all([
+    getStorefrontProducts({ sort: "newest", limit: variant === "4" ? 10 : 8 }),
+    getBestSellingProducts(8),
+    getPromoProducts(2),
+    getDiscountedProducts(8),
+    getStorefrontBrands(),
+    Promise.all(
+      rowCategories.map((c) => getStorefrontProducts({ category: c.slug, sort: "newest", limit: 8 }))
+    ),
   ]);
 
-  const banners = Array.isArray(settings.bannerUrls)
-    ? (settings.bannerUrls as string[])
-    : [];
+  const data: HomeData = {
+    siteTitle: settings.siteTitle ?? "E-commerce",
+    banners: Array.isArray(settings.bannerUrls) ? (settings.bannerUrls as string[]) : [],
+    categories,
+    newest: newest.data,
+    bestSellers,
+    promos,
+    deals,
+    brands,
+    categoryRows: rowCategories.map((category, i) => ({ category, products: rowProducts[i].data })),
+  };
 
-  return (
-    <div className="space-y-12">
-      <HeroBanner banners={banners} />
-
-      <CategorySection categories={categories} />
-
-      <section>
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl font-semibold text-foreground">
-            New arrivals
-          </h2>
-          <Link href="/products" className="text-sm font-medium text-primary hover:underline">
-            View all
-          </Link>
-        </div>
-        <div className="mt-4">
-          <ProductGrid products={newest.data} />
-        </div>
-      </section>
-    </div>
-  );
+  return <Home {...data} />;
 }

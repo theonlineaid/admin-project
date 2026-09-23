@@ -132,3 +132,5 @@ Open [http://localhost:3000](http://localhost:3000). Sign in at `/login`, then u
 ## Optional: Stripe
 
 Add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to `.env` when you integrate Stripe for payments.
+
+docker compose -f docker-compose.yml -f docker-compose.hot.yml up -d --build

@@ -7,7 +7,7 @@ export async function getSiteSettings() {
   });
   if (settings) return settings;
   return prisma.siteSettings.create({
-    data: { siteTitle: "E-commerce", headerVariant: "1", footerVariant: "1" },
+    data: { siteTitle: "E-commerce", headerVariant: "1", footerVariant: "1", homeVariant: "1" },
   });
 }
 
@@ -113,6 +113,67 @@ export async function getStorefrontProducts(filters: StorefrontProductFilters) {
   ]);
 
   return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+/** Top products by units sold; topped up with the newest products when there aren't enough orders yet. */
+export async function getBestSellingProducts(limit = 8) {
+  const top = await prisma.orderItem.groupBy({
+    by: ["productId"],
+    _sum: { quantity: true },
+    orderBy: { _sum: { quantity: "desc" } },
+    take: limit * 2,
+  });
+  const ids = top.map((t) => t.productId);
+  const sold = ids.length
+    ? await prisma.product.findMany({
+        where: { id: { in: ids }, status: "active" },
+        select: PRODUCT_CARD_SELECT,
+      })
+    : [];
+  const ranked = ids
+    .map((id) => sold.find((p) => p.id === id))
+    .filter((p): p is StorefrontProductCard => Boolean(p))
+    .slice(0, limit);
+  if (ranked.length >= limit) return ranked;
+
+  const filler = await prisma.product.findMany({
+    where: { status: "active", id: { notIn: ranked.map((p) => p.id) } },
+    orderBy: { createdAt: "desc" },
+    take: limit - ranked.length,
+    select: PRODUCT_CARD_SELECT,
+  });
+  return [...ranked, ...filler];
+}
+
+/** In-stock products that are actually on sale, biggest discount first. */
+export async function getDiscountedProducts(limit = 8) {
+  const discounted = await prisma.product.findMany({
+    where: { status: "active", compareAtPrice: { not: null }, stock: { gt: 0 } },
+    take: 50,
+    select: PRODUCT_CARD_SELECT,
+  });
+  return discounted
+    .filter((p) => Number(p.compareAtPrice) > Number(p.price))
+    .sort(
+      (a, b) =>
+        (Number(b.compareAtPrice) - Number(b.price)) / Number(b.compareAtPrice) -
+        (Number(a.compareAtPrice) - Number(a.price)) / Number(a.compareAtPrice)
+    )
+    .slice(0, limit);
+}
+
+/** Products for homepage offer cards: biggest discounts first, then the newest. */
+export async function getPromoProducts(limit = 2) {
+  const byDiscount = await getDiscountedProducts(limit);
+  if (byDiscount.length >= limit) return byDiscount;
+
+  const filler = await prisma.product.findMany({
+    where: { status: "active", id: { notIn: byDiscount.map((p) => p.id) } },
+    orderBy: { createdAt: "desc" },
+    take: limit - byDiscount.length,
+    select: PRODUCT_CARD_SELECT,
+  });
+  return [...byDiscount, ...filler];
 }
 
 export async function getStorefrontProduct(slug: string) {

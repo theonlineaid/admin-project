@@ -1,7 +1,19 @@
 import type { StorefrontProductCard } from "@/lib/storefront";
 import { ProductCard } from "@/components/storefront/product-card";
 
-export function ProductGrid({ products }: { products: StorefrontProductCard[] }) {
+const COLUMNS = {
+  3: "grid-cols-2 sm:grid-cols-3",
+  4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+  5: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+} as const;
+
+export function ProductGrid({
+  products,
+  columns = 4,
+}: {
+  products: StorefrontProductCard[];
+  columns?: keyof typeof COLUMNS;
+}) {
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border py-16 text-center">
@@ -14,7 +26,7 @@ export function ProductGrid({ products }: { products: StorefrontProductCard[] })
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className={`grid gap-x-4 gap-y-8 ${COLUMNS[columns]}`}>
       {products.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
