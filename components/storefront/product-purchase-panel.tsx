@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { Minus, Plus, ShoppingCart, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart, type CartItem } from "@/components/storefront/cart-context";
@@ -17,6 +18,7 @@ export function ProductPurchasePanel({
 
   function handleAdd() {
     addItem(product, quantity);
+    toast.success(`${product.name} added to cart`);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }

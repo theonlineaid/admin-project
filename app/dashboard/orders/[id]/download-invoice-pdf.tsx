@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
+import toast from "react-hot-toast";
 
 export type OrderForPdf = {
   orderNumber: string;
@@ -128,7 +129,7 @@ export function DownloadInvoicePdf({ order }: { order: OrderForPdf }) {
       doc.save(`invoice-${order.orderNumber}.pdf`);
     } catch (e) {
       console.error(e);
-      alert("Failed to generate PDF");
+      toast.error("Failed to generate PDF");
     } finally {
       setLoading(false);
     }

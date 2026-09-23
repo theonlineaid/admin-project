@@ -3,9 +3,8 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -31,67 +30,84 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "storefront-cart";
+const EMPTY_CART: CartItem[] = [];
+
+const listeners = new Set<() => void>();
+let cart: CartItem[] = EMPTY_CART;
+let initialized = false;
+
+function readFromStorage(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeToStorage(items: CartItem[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // storage unavailable (private mode, quota, etc.) — cart stays in-memory
+  }
+}
+
+function setCart(next: CartItem[]) {
+  cart = next;
+  writeToStorage(next);
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function getSnapshot() {
+  if (!initialized) {
+    cart = readFromStorage();
+    initialized = true;
+  }
+  return cart;
+}
+
+function getServerSnapshot() {
+  return EMPTY_CART;
+}
+
+function addItem(item: Omit<CartItem, "quantity">, quantity = 1) {
+  const existing = cart.find((i) => i.productId === item.productId);
+  if (existing) {
+    const nextQty = Math.min(existing.quantity + quantity, item.stock);
+    setCart(cart.map((i) => (i.productId === item.productId ? { ...i, quantity: nextQty } : i)));
+  } else {
+    setCart([...cart, { ...item, quantity: Math.min(quantity, item.stock) }]);
+  }
+}
+
+function updateQuantity(productId: string, quantity: number) {
+  setCart(
+    quantity <= 0
+      ? cart.filter((i) => i.productId !== productId)
+      : cart.map((i) =>
+          i.productId === productId ? { ...i, quantity: Math.min(quantity, i.stock) } : i
+        )
+  );
+}
+
+function removeItem(productId: string) {
+  setCart(cart.filter((i) => i.productId !== productId));
+}
+
+function clear() {
+  setCart([]);
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setItems(JSON.parse(raw));
-    } catch {
-      // ignore corrupt/unavailable storage
-    }
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch {
-      // ignore unavailable storage
-    }
-  }, [items, hydrated]);
-
-  function addItem(item: Omit<CartItem, "quantity">, quantity = 1) {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.productId === item.productId);
-      if (existing) {
-        const nextQty = Math.min(existing.quantity + quantity, item.stock);
-        return prev.map((i) =>
-          i.productId === item.productId ? { ...i, quantity: nextQty } : i
-        );
-      }
-      return [...prev, { ...item, quantity: Math.min(quantity, item.stock) }];
-    });
-  }
-
-  function updateQuantity(productId: string, quantity: number) {
-    setItems((prev) =>
-      quantity <= 0
-        ? prev.filter((i) => i.productId !== productId)
-        : prev.map((i) =>
-            i.productId === productId
-              ? { ...i, quantity: Math.min(quantity, i.stock) }
-              : i
-          )
-    );
-  }
-
-  function removeItem(productId: string) {
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
-  }
-
-  function clear() {
-    setItems([]);
-  }
-
-  const count = useMemo(
-    () => items.reduce((sum, i) => sum + i.quantity, 0),
-    [items]
-  );
+  const count = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
   const subtotal = useMemo(
     () => items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     [items]

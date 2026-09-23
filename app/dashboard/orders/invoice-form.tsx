@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 type User = { id: string; name: string; email: string; role: string };
 type Product = { id: string; name: string; price: string; stock: number };
@@ -53,12 +54,12 @@ export function InvoiceForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userId) {
-      alert("Please select a customer.");
+      toast.error("Please select a customer.");
       return;
     }
     const validItems = items.filter((i) => i.productId && i.quantity >= 1);
     if (validItems.length === 0) {
-      alert("Add at least one product with quantity.");
+      toast.error("Add at least one product with quantity.");
       return;
     }
 
@@ -76,10 +77,11 @@ export function InvoiceForm() {
 
     if (!res.ok) {
       const err = await res.json();
-      alert(err.error || "Failed to create invoice");
+      toast.error(err.error || "Failed to create invoice");
       return;
     }
     const order = await res.json();
+    toast.success("Invoice created");
     router.push(`/dashboard/orders/${order.id}`);
     router.refresh();
   }

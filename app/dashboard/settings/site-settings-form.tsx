@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Plus } from "lucide-react";
+import { HeaderPreview, FooterPreview } from "./variant-previews";
+import toast from "react-hot-toast";
 
 export type TopbarItem = {
   id: string;
@@ -44,19 +46,19 @@ function newTopbarItem(): TopbarItem {
 }
 
 const HEADER_OPTIONS = [
-  { value: "1", label: "Header style 1" },
-  { value: "2", label: "Header style 2" },
-  { value: "3", label: "Header style 3" },
-  { value: "4", label: "Header style 4" },
-  { value: "5", label: "Header style 5" },
+  { value: "1", label: "Marketplace giant", hint: "Dark utility bar, delivery line, categories row" },
+  { value: "2", label: "Vibrant bazaar", hint: "Bold color bar, oversized search" },
+  { value: "3", label: "Minimal storefront", hint: "Hamburger + centered logo, icons only" },
+  { value: "4", label: "Auction-house classic", hint: "\"Shop by category\" dropdown + quick links" },
+  { value: "5", label: "Handmade-market clean", hint: "Pill search, text-first sign in" },
 ];
 
 const FOOTER_OPTIONS = [
-  { value: "1", label: "Footer style 1" },
-  { value: "2", label: "Footer style 2" },
-  { value: "3", label: "Footer style 3" },
-  { value: "4", label: "Footer style 4" },
-  { value: "5", label: "Footer style 5" },
+  { value: "1", label: "Columns", hint: "Brand blurb + three link columns" },
+  { value: "2", label: "Minimal", hint: "One slim row, no columns" },
+  { value: "3", label: "Newsletter", hint: "Signup band + link columns" },
+  { value: "4", label: "Mega", hint: "Dense columns with live categories" },
+  { value: "5", label: "Dark banded", hint: "Inverted, centered" },
 ];
 
 async function uploadFile(file: File, folder: string): Promise<string> {
@@ -73,7 +75,7 @@ async function uploadFile(file: File, folder: string): Promise<string> {
 }
 
 export function SiteSettingsForm() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -146,8 +148,9 @@ export function SiteSettingsForm() {
       const folder = field === "logoUrl" ? "logo" : "favicon";
       const url = await uploadFile(file, folder);
       setForm((prev) => ({ ...prev, [field]: url }));
+      toast.success("Image uploaded");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Upload failed");
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(null);
       e.target.value = "";
@@ -172,8 +175,9 @@ export function SiteSettingsForm() {
         return { ...prev, bannerUrls: next };
       });
       await fetchBannerFolderImages();
+      toast.success(files.length > 1 ? "Banners uploaded" : "Banner uploaded");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Upload failed");
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(null);
       e.target.value = "";
@@ -213,8 +217,9 @@ export function SiteSettingsForm() {
       if (!res.ok) throw new Error("Failed to save");
       const data = await res.json();
       setSettings(data);
+      toast.success("Settings saved");
     } catch {
-      alert("Failed to save settings");
+      toast.error("Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -351,7 +356,7 @@ export function SiteSettingsForm() {
             {HEADER_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
-                className={`flex flex-col items-center rounded-lg border-2 px-4 py-3 cursor-pointer transition-colors ${
+                className={`flex w-48 flex-col items-center rounded-lg border-2 px-3 py-3 text-center cursor-pointer transition-colors ${
                   form.headerVariant === opt.value
                     ? "border-primary bg-primary/10"
                     : "border-border hover:bg-muted/50"
@@ -367,7 +372,9 @@ export function SiteSettingsForm() {
                   }
                   className="sr-only"
                 />
-                <span className="text-sm font-medium">{opt.label}</span>
+                <HeaderPreview variant={opt.value} />
+                <span className="mt-2 text-sm font-medium">{opt.label}</span>
+                <span className="mt-1 text-xs text-muted-foreground">{opt.hint}</span>
               </label>
             ))}
           </div>
@@ -386,7 +393,7 @@ export function SiteSettingsForm() {
             {FOOTER_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
-                className={`flex flex-col items-center rounded-lg border-2 px-4 py-3 cursor-pointer transition-colors ${
+                className={`flex w-48 flex-col items-center rounded-lg border-2 px-3 py-3 text-center cursor-pointer transition-colors ${
                   form.footerVariant === opt.value
                     ? "border-primary bg-primary/10"
                     : "border-border hover:bg-muted/50"
@@ -402,7 +409,9 @@ export function SiteSettingsForm() {
                   }
                   className="sr-only"
                 />
-                <span className="text-sm font-medium">{opt.label}</span>
+                <FooterPreview variant={opt.value} />
+                <span className="mt-2 text-sm font-medium">{opt.label}</span>
+                <span className="mt-1 text-xs text-muted-foreground">{opt.hint}</span>
               </label>
             ))}
           </div>
@@ -454,8 +463,9 @@ export function SiteSettingsForm() {
                           setForm((prev) => ({ ...prev, bannerUrls: newUrls }));
                           await saveBannerUrls(newUrls);
                         }
+                        toast.success("Banner deleted");
                       } catch (err) {
-                        alert(err instanceof Error ? err.message : "Failed to delete");
+                        toast.error(err instanceof Error ? err.message : "Failed to delete");
                       }
                     }}
                     aria-label="Delete banner"

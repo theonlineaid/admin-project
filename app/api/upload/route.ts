@@ -1,7 +1,7 @@
 // app/api/upload/route.ts
 import { NextResponse } from "next/server";
 import { getSession, requireSellerOrAdmin } from "@/lib/api-utils";
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 
 // Cloudinary config
 cloudinary.config({
@@ -55,22 +55,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const mimeType = hasValidType
-      ? file.type
-      : name.endsWith(".svg")
-      ? "image/svg+xml"
-      : "image/jpeg";
-
     // 4️⃣ Convert file to Buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     // 5️⃣ Upload using Cloudinary stream
-    const result: any = await new Promise((resolve, reject) => {
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder },
         (err, res) => {
-          if (err) reject(err);
+          if (err || !res) reject(err ?? new Error("Empty upload response"));
           else resolve(res);
         }
       );

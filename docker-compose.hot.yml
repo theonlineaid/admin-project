@@ -1,0 +1,25 @@
+# Dev override: run the app in Docker with hot reload.
+#   docker compose -f docker-compose.yml -f docker-compose.hot.yml up --build
+# After changing package.json, add -V so the node_modules volume is recreated.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    entrypoint: []
+    command: >
+      sh -c "npx prisma generate &&
+             npx prisma db push --accept-data-loss &&
+             (npx tsx prisma/seed.ts || true) &&
+             npx next dev -H 0.0.0.0 -p 3000"
+    environment:
+      NODE_ENV: development
+      # Polling makes file watching reliable on Docker Desktop (macOS/Windows/WSL mounts)
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - .:/app
+      # Keep the container's own node_modules and build cache (Alpine binaries),
+      # not the host's
+      - /app/node_modules
+      - /app/.next

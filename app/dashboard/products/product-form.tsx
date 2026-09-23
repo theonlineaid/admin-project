@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import toast from "react-hot-toast";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -125,7 +126,7 @@ export function ProductForm({
         throw new Error("No URL returned from upload");
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Upload failed");
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploadingImage(false);
       e.target.value = "";
@@ -153,9 +154,10 @@ export function ProductForm({
     });
     if (!res.ok) {
       const err = await res.json();
-      alert(err.error || "Failed to save");
+      toast.error(err.error || "Failed to save");
       return;
     }
+    toast.success(product ? "Product updated" : "Product created");
     router.push("/dashboard/products");
     router.refresh();
   }

@@ -14,6 +14,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import toast from "react-hot-toast";
 
 type Brand = {
   id: string;
@@ -68,15 +69,24 @@ export function BrandsTable() {
     });
     setLoading(false);
     if (res.ok) {
+      toast.success(edit ? "Brand updated" : "Brand created");
       setOpen(false);
       load();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast.error(typeof err.error === "string" ? err.error : "Failed to save brand");
     }
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this brand?")) return;
     const res = await fetch(`/api/brands/${id}`, { method: "DELETE" });
-    if (res.ok) load();
+    if (res.ok) {
+      toast.success("Brand deleted");
+      load();
+    } else {
+      toast.error("Failed to delete brand");
+    }
   }
 
   return (

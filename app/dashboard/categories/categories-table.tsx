@@ -14,6 +14,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import toast from "react-hot-toast";
 
 type Category = {
   id: string;
@@ -68,15 +69,24 @@ export function CategoriesTable() {
     });
     setLoading(false);
     if (res.ok) {
+      toast.success(edit ? "Category updated" : "Category created");
       setOpen(false);
       load();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast.error(typeof err.error === "string" ? err.error : "Failed to save category");
     }
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this category?")) return;
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
-    if (res.ok) load();
+    if (res.ok) {
+      toast.success("Category deleted");
+      load();
+    } else {
+      toast.error("Failed to delete category");
+    }
   }
 
   return (

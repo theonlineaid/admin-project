@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { ShoppingCart, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ export function AddToCartButton({ product, quantity = 1, compact, className }: P
 
   function handleClick() {
     addItem(product, quantity);
+    toast.success(`${product.name} added to cart`);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }

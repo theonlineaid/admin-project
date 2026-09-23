@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import toast from "react-hot-toast";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -53,7 +54,7 @@ export function UserForm({
 
   async function onSubmit(values: FormValues) {
     if (!isEdit && (!values.password || values.password.length < 6)) {
-      alert("Password is required (min 6 characters)");
+      toast.error("Password is required (min 6 characters)");
       return;
     }
     const url = user ? `/api/users/${user.id}` : "/api/users";
@@ -75,9 +76,10 @@ export function UserForm({
 
     if (!res.ok) {
       const err = await res.json();
-      alert(JSON.stringify(err.error || "Failed to save"));
+      toast.error(typeof err.error === "string" ? err.error : "Failed to save");
       return;
     }
+    toast.success(isEdit ? "User updated" : "User created");
 
     router.push("/dashboard/customers");
     router.refresh();

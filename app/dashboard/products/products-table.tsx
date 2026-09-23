@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { formatCurrency } from "@/lib/utils";
 import { Pencil, Trash2, Search } from "lucide-react";
+import toast from "react-hot-toast";
 
 export function ProductsTable() {
   const [data, setData] = useState<{
@@ -48,7 +49,12 @@ export function ProductsTable() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this product?")) return;
     const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-    if (res.ok) setData((prev) => prev && { ...prev, data: prev.data.filter((p) => p.id !== id) });
+    if (res.ok) {
+      toast.success("Product deleted");
+      setData((prev) => prev && { ...prev, data: prev.data.filter((p) => p.id !== id) });
+    } else {
+      toast.error("Failed to delete product");
+    }
   };
 
   if (!data) return <div className="text-muted-foreground">Loading...</div>;

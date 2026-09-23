@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export function DeleteUserButton({ userId, userName }: { userId: string; userName: string }) {
   const router = useRouter();
@@ -11,11 +12,12 @@ export function DeleteUserButton({ userId, userName }: { userId: string; userNam
     if (!confirm(`Delete user "${userName}"? This cannot be undone.`)) return;
     const res = await fetch(`/api/users/${userId}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("User deleted");
       router.push("/dashboard/customers");
       router.refresh();
     } else {
       const err = await res.json();
-      alert(err.error || "Failed to delete user");
+      toast.error(err.error || "Failed to delete user");
     }
   }
 

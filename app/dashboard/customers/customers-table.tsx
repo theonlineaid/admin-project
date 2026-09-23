@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { formatDate } from "@/lib/utils";
 import { Search, Pencil, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export function CustomersTable() {
   const router = useRouter();
@@ -53,13 +54,14 @@ export function CustomersTable() {
     if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
     const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("User deleted");
       router.refresh();
       setData((prev) =>
         prev ? { ...prev, data: prev.data.filter((u) => u.id !== id) } : null
       );
     } else {
       const err = await res.json();
-      alert(err.error || "Failed to delete");
+      toast.error(err.error || "Failed to delete");
     }
   }
 

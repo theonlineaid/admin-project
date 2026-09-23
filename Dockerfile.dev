@@ -1,0 +1,14 @@
+# Development image: runs `next dev` against the source mounted from the host
+# (see docker-compose.dev.yml). Only dependencies are baked in.
+FROM node:20-alpine
+RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --ignore-scripts
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+ENV NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3000

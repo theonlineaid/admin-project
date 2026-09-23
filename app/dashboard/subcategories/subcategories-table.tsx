@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import toast from "react-hot-toast";
 
 type Subcategory = {
   id: string;
@@ -78,15 +79,24 @@ export function SubcategoriesTable() {
     });
     setLoading(false);
     if (res.ok) {
+      toast.success(edit ? "Subcategory updated" : "Subcategory created");
       setOpen(false);
       load();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast.error(typeof err.error === "string" ? err.error : "Failed to save subcategory");
     }
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this subcategory?")) return;
     const res = await fetch(`/api/subcategories/${id}`, { method: "DELETE" });
-    if (res.ok) load();
+    if (res.ok) {
+      toast.success("Subcategory deleted");
+      load();
+    } else {
+      toast.error("Failed to delete subcategory");
+    }
   }
 
   return (
