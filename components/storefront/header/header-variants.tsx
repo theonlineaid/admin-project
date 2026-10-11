@@ -10,6 +10,8 @@ import {
   SearchForm,
   CartButton,
   CartButtonLabeled,
+  WishlistButton,
+  WishlistButtonLabeled,
   AccountMenu,
   CategoryMegaMenu,
   HamburgerMenu,
@@ -36,7 +38,8 @@ export function HeaderV1({ siteTitle, logoUrl, user, categories }: HeaderVariant
         <Logo siteTitle={siteTitle} logoUrl={logoUrl} />
         <DeliveryLocation tone="onDark" />
         <SearchForm className="hidden flex-1 sm:block" placeholder="Search products, brands, and categories" />
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-1.5">
+          <WishlistButton tone="onDark" />
           <div className="hidden sm:block">
             <AccountMenu user={user} tone="onDark" />
           </div>
@@ -68,8 +71,9 @@ export function HeaderV2({ siteTitle, logoUrl, user, categories }: HeaderVariant
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
           <Logo siteTitle={siteTitle} logoUrl={logoUrl} />
           <SearchForm className="hidden max-w-2xl flex-1 sm:block" placeholder="Search for anything" />
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <LanguageCurrency tone="onPrimary" />
+            <WishlistButton tone="onPrimary" />
             <AccountMenu user={user} tone="onPrimary" />
             <CartButton tone="onPrimary" />
           </div>
@@ -110,6 +114,7 @@ export function HeaderV3({ siteTitle, logoUrl, user, categories }: HeaderVariant
           >
             <SearchIcon className="h-5 w-5" />
           </button>
+          <WishlistButton />
           <CartButton />
           <AccountMenu user={user} />
         </div>
@@ -143,6 +148,7 @@ export function HeaderV4({ siteTitle, logoUrl, user, categories }: HeaderVariant
         />
         <SearchForm className="hidden flex-1 sm:block" placeholder="Search for anything" />
         <div className="ml-auto flex items-center gap-1 sm:ml-0">
+          <WishlistButton />
           <AccountMenu user={user} />
           <CartButton />
         </div>
@@ -154,6 +160,9 @@ export function HeaderV4({ siteTitle, logoUrl, user, categories }: HeaderVariant
         </Link>
         <Link href="/products" className="hover:text-foreground">
           All products
+        </Link>
+        <Link href="/wishlist" className="hover:text-foreground">
+          My Wishlist
         </Link>
         <Link href="/orders" className="hover:text-foreground">
           Track an order
@@ -176,7 +185,8 @@ export function HeaderV5({ siteTitle, logoUrl, user, categories }: HeaderVariant
           className="hidden max-w-xl flex-1 [&_input]:rounded-full sm:block"
           placeholder="Search for products"
         />
-        <div className="ml-auto flex items-center gap-4">
+        <div className="ml-auto flex items-center gap-3">
+          <WishlistButton />
           <div className="hidden sm:block">
             <AccountMenu user={user} labeled />
           </div>

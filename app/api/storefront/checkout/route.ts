@@ -21,6 +21,7 @@ const checkoutSchema = z.object({
     zip: z.string().optional(),
     country: z.string().min(1),
   }),
+  couponCode: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -75,6 +76,34 @@ export async function POST(req: Request) {
       sellerIds.add(product.sellerId);
     }
 
+    let discountAmount = 0;
+    let validatedCouponId: string | null = null;
+    if (parsed.data.couponCode) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: parsed.data.couponCode.toUpperCase().trim() },
+      });
+      if (coupon && coupon.isActive) {
+        const now = new Date();
+        const validDates = (!coupon.startDate || coupon.startDate <= now) && (!coupon.endDate || coupon.endDate >= now);
+        const validLimit = coupon.usageLimit === null || coupon.usedCount < coupon.usageLimit;
+        const minOrder = coupon.minOrderAmount ? Number(coupon.minOrderAmount) : 0;
+        if (validDates && validLimit && totalPrice >= minOrder) {
+          const val = Number(coupon.discountValue);
+          if (coupon.discountType === "percentage") {
+            discountAmount = (totalPrice * val) / 100;
+            if (coupon.maxDiscountAmount) {
+              const maxDisc = Number(coupon.maxDiscountAmount);
+              if (discountAmount > maxDisc) discountAmount = maxDisc;
+            }
+          } else {
+            discountAmount = Math.min(val, totalPrice);
+          }
+          validatedCouponId = coupon.id;
+        }
+      }
+    }
+
+    const finalTotalPrice = Math.max(0, Number((totalPrice - discountAmount).toFixed(2)));
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const order = await prisma.$transaction(async (tx) => {
@@ -85,15 +114,31 @@ export async function POST(req: Request) {
         });
       }
 
+      if (validatedCouponId) {
+        await tx.coupon.update({
+          where: { id: validatedCouponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
       const ord = await tx.order.create({
         data: {
           orderNumber,
           userId,
-          totalPrice,
+          totalPrice: finalTotalPrice,
+          discountAmount: discountAmount > 0 ? discountAmount : 0,
+          couponCode: validatedCouponId ? parsed.data.couponCode?.toUpperCase().trim() : null,
           status: "pending",
           paymentStatus: "pending",
           notes: parsed.data.notes ?? null,
           shippingAddress: parsed.data.shippingAddress as Prisma.InputJsonValue,
+          timeline: [
+            {
+              status: "pending",
+              timestamp: new Date().toISOString(),
+              note: "Order placed successfully",
+            },
+          ] as Prisma.InputJsonValue,
         },
       });
 

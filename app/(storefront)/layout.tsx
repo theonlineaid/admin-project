@@ -1,6 +1,11 @@
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getStorefrontCategories } from "@/lib/storefront";
 import { CartProvider } from "@/components/storefront/cart-context";
+import { WishlistProvider } from "@/components/storefront/wishlist-context";
+import { QuickViewProvider } from "@/components/storefront/quick-view-context";
+import { CartDrawer } from "@/components/storefront/cart-drawer";
+import { QuickViewModal } from "@/components/storefront/quick-view-modal";
+import { AnnouncementBar } from "@/components/storefront/announcement-bar";
 import { SiteHeader } from "@/components/storefront/site-header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import type { TopbarItem } from "@/components/storefront/header/topbar";
@@ -31,24 +36,34 @@ export default async function StorefrontLayout({
 
   return (
     <CartProvider>
-      <div className="flex min-h-screen flex-col bg-background">
-        <SiteHeader
-          siteTitle={siteTitle}
-          logoUrl={settings.logoUrl}
-          user={user}
-          categories={categories}
-          headerVariant={settings.headerVariant ?? "1"}
-          topbarItems={topbarItems}
-        />
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
-          {children}
-        </main>
-        <SiteFooter
-          siteTitle={siteTitle}
-          footerVariant={settings.footerVariant ?? "1"}
-          categories={categories}
-        />
-      </div>
+      <WishlistProvider>
+        <QuickViewProvider>
+          <div className="flex min-h-screen flex-col bg-background">
+            <AnnouncementBar
+              text={settings.announcementText}
+              enabled={settings.announcementEnabled}
+            />
+            <SiteHeader
+              siteTitle={siteTitle}
+              logoUrl={settings.logoUrl}
+              user={user}
+              categories={categories}
+              headerVariant={settings.headerVariant ?? "1"}
+              topbarItems={topbarItems}
+            />
+            <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
+              {children}
+            </main>
+            <SiteFooter
+              siteTitle={siteTitle}
+              footerVariant={settings.footerVariant ?? "1"}
+              categories={categories}
+            />
+            <CartDrawer />
+            <QuickViewModal />
+          </div>
+        </QuickViewProvider>
+      </WishlistProvider>
     </CartProvider>
   );
 }

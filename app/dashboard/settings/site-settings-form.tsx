@@ -100,6 +100,11 @@ export function SiteSettingsForm() {
     topbarEnabled: false,
     topbarItems: [] as TopbarItem[],
     bannerUrls: [] as string[],
+    currency: "USD",
+    currencySymbol: "$",
+    announcementText: "🔥 Exclusive Offer: Get 15% OFF your order with coupon 'WELCOME15'!",
+    announcementEnabled: true,
+    freeShippingThreshold: 100,
   });
 
   useEffect(() => {
@@ -125,6 +130,11 @@ export function SiteSettingsForm() {
           topbarEnabled: data.topbarEnabled ?? false,
           topbarItems: items,
           bannerUrls: banners,
+          currency: data.currency ?? "USD",
+          currencySymbol: data.currencySymbol ?? "$",
+          announcementText: data.announcementText ?? "🔥 Exclusive Offer: Get 15% OFF with coupon 'WELCOME15'!",
+          announcementEnabled: data.announcementEnabled ?? true,
+          freeShippingThreshold: data.freeShippingThreshold ? Number(data.freeShippingThreshold) : 100,
         });
       })
       .catch(console.error)
@@ -246,6 +256,11 @@ export function SiteSettingsForm() {
           topbarEnabled: form.topbarEnabled,
           topbarItems: form.topbarItems.length ? form.topbarItems : null,
           bannerUrls: form.bannerUrls.length >= MIN_BANNERS ? form.bannerUrls : null,
+          currency: form.currency,
+          currencySymbol: form.currencySymbol,
+          announcementText: form.announcementText || null,
+          announcementEnabled: form.announcementEnabled,
+          freeShippingThreshold: form.freeShippingThreshold ? Number(form.freeShippingThreshold) : null,
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -374,6 +389,95 @@ export function SiteSettingsForm() {
                 )}
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Currency, Shipping & Announcement Bar</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure default store currency, announcement banner, and free shipping threshold.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Store Currency Code</Label>
+              <select
+                value={form.currency}
+                onChange={(e) => {
+                  const curr = e.target.value;
+                  const symMap: Record<string, string> = {
+                    USD: "$",
+                    EUR: "€",
+                    GBP: "£",
+                    BDT: "৳",
+                    CAD: "C$",
+                    AUD: "A$",
+                    JPY: "¥",
+                  };
+                  setForm((prev) => ({
+                    ...prev,
+                    currency: curr,
+                    currencySymbol: symMap[curr] ?? "$",
+                  }));
+                }}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
+              >
+                <option value="USD">USD - US Dollar ($)</option>
+                <option value="EUR">EUR - Euro (€)</option>
+                <option value="GBP">GBP - British Pound (£)</option>
+                <option value="BDT">BDT - Bangladeshi Taka (৳)</option>
+                <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                <option value="AUD">AUD - Australian Dollar (A$)</option>
+                <option value="JPY">JPY - Japanese Yen (¥)</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Currency Symbol</Label>
+              <Input
+                value={form.currencySymbol}
+                onChange={(e) => setForm((prev) => ({ ...prev, currencySymbol: e.target.value }))}
+                placeholder="$"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Free Shipping Threshold ({form.currencySymbol})</Label>
+              <Input
+                type="number"
+                value={form.freeShippingThreshold}
+                onChange={(e) => setForm((prev) => ({ ...prev, freeShippingThreshold: parseFloat(e.target.value) || 0 }))}
+                placeholder="100"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.announcementEnabled}
+                onChange={(e) => setForm((prev) => ({ ...prev, announcementEnabled: e.target.checked }))}
+                className="rounded text-primary focus:ring-primary h-4 w-4"
+              />
+              <span className="text-sm font-medium text-foreground">
+                Enable Top Announcement Bar on Storefront
+              </span>
+            </label>
+
+            {form.announcementEnabled && (
+              <div className="space-y-1.5 pl-6">
+                <Label>Announcement Message</Label>
+                <Input
+                  value={form.announcementText}
+                  onChange={(e) => setForm((prev) => ({ ...prev, announcementText: e.target.value }))}
+                  placeholder="e.g. 🔥 Flash Sale: Use code WELCOME15 for 15% OFF!"
+                />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

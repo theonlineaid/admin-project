@@ -10,7 +10,11 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.hot.yml up -d",
+    "docker:build": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f app"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

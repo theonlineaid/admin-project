@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { OrderStatusUpdate } from "./order-status-update";
 import { DownloadInvoicePdf } from "./download-invoice-pdf";
+import { OrderTrackingCard } from "./order-tracking-card";
 
 export default async function OrderDetailPage({
   params,
@@ -116,12 +117,28 @@ export default async function OrderDetailPage({
           </tbody>
         </table>
         <div className="bg-muted/50 px-4 py-3 flex justify-end">
-          <div className="flex items-center gap-8">
-            <span className="text-muted-foreground">Total</span>
-            <span className="text-xl font-bold text-foreground">{formatCurrency(order.totalPrice.toString())}</span>
+          <div className="space-y-1 text-right">
+            {order.discountAmount && Number(order.discountAmount) > 0 ? (
+              <div className="flex items-center justify-end gap-6 text-sm text-emerald-600">
+                <span>Coupon Discount ({order.couponCode || "PROMO"})</span>
+                <span>-{formatCurrency(order.discountAmount.toString())}</span>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-end gap-8">
+              <span className="text-muted-foreground">Total</span>
+              <span className="text-xl font-bold text-foreground">{formatCurrency(order.totalPrice.toString())}</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <OrderTrackingCard
+        orderId={order.id}
+        currentCarrier={order.carrier}
+        currentTrackingNumber={order.trackingNumber}
+        currentStatus={order.status}
+        timeline={Array.isArray(order.timeline) ? (order.timeline as any[]) : []}
+      />
 
       {order.notes && (
         <div>

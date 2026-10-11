@@ -24,6 +24,11 @@ const updateSchema = z.object({
   topbarEnabled: z.boolean().optional(),
   topbarItems: z.array(topbarItemSchema).optional().nullable(),
   bannerUrls: z.array(z.string().url()).min(1).max(5).optional().nullable(),
+  currency: z.string().optional().nullable(),
+  currencySymbol: z.string().optional().nullable(),
+  announcementText: z.string().optional().nullable(),
+  announcementEnabled: z.boolean().optional(),
+  freeShippingThreshold: z.number().min(0).optional().nullable(),
 });
 
 export async function GET() {
@@ -91,6 +96,11 @@ export async function PATCH(req: Request) {
       ...(parsed.data.topbarEnabled !== undefined && { topbarEnabled: parsed.data.topbarEnabled }),
       ...(parsed.data.topbarItems !== undefined && { topbarItems: parsed.data.topbarItems as Prisma.InputJsonValue }),
       ...(parsed.data.bannerUrls !== undefined && { bannerUrls: parsed.data.bannerUrls as Prisma.InputJsonValue }),
+      ...(parsed.data.currency !== undefined && { currency: parsed.data.currency }),
+      ...(parsed.data.currencySymbol !== undefined && { currencySymbol: parsed.data.currencySymbol }),
+      ...(parsed.data.announcementText !== undefined && { announcementText: parsed.data.announcementText }),
+      ...(parsed.data.announcementEnabled !== undefined && { announcementEnabled: parsed.data.announcementEnabled }),
+      ...(parsed.data.freeShippingThreshold !== undefined && { freeShippingThreshold: parsed.data.freeShippingThreshold ? new Prisma.Decimal(parsed.data.freeShippingThreshold) : null }),
     };
 
     const updated = await prisma.siteSettings.update({

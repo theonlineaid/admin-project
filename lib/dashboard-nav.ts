@@ -8,6 +8,8 @@ import {
   CreditCard,
   FolderTree,
   Tag,
+  Percent,
+  Star,
   BarChart3,
   Settings,
 } from "lucide-react";
@@ -20,6 +22,8 @@ export const adminNav: NavItem[] = [
   { href: "/dashboard/orders", label: "Orders", key: "orders", icon: ShoppingCart },
   { href: "/dashboard/customers", label: "Users", key: "users", icon: Users },
   { href: "/dashboard/sellers", label: "Sellers", key: "sellers", icon: Store },
+  { href: "/dashboard/coupons", label: "Coupons", key: "coupons", icon: Percent },
+  { href: "/dashboard/reviews", label: "Reviews", key: "reviews", icon: Star },
   { href: "/dashboard/payments", label: "Payments", key: "payments", icon: CreditCard },
   { href: "/dashboard/categories", label: "Categories", key: "categories", icon: FolderTree },
   { href: "/dashboard/subcategories", label: "Subcategories", key: "subcategories", icon: FolderTree },

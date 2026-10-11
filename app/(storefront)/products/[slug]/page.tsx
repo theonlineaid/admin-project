@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { ProductPurchasePanel } from "@/components/storefront/product-purchase-panel";
 import { ProductGrid } from "@/components/storefront/product-grid";
+import { ProductReviews } from "@/components/storefront/product-reviews";
 
 export default async function ProductDetailPage({
   params,
@@ -116,6 +117,11 @@ export default async function ProductDetailPage({
           </div>
         </section>
       ) : null}
+
+      <ProductReviews
+        productId={product.id}
+        initialReviews={(product as any).reviews ?? []}
+      />
     </div>
   );
 }

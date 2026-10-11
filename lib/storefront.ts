@@ -53,8 +53,11 @@ const PRODUCT_CARD_SELECT = {
   compareAtPrice: true,
   stock: true,
   images: true,
+  badge: true,
+  isFeatured: true,
   category: { select: { id: true, name: true, slug: true } },
   brand: { select: { id: true, name: true, slug: true } },
+  reviews: { select: { rating: true }, where: { approved: true } },
 } satisfies Prisma.ProductSelect;
 
 export type StorefrontProductCard = Prisma.ProductGetPayload<{
@@ -184,6 +187,11 @@ export async function getStorefrontProduct(slug: string) {
       subcategory: { select: { id: true, name: true, slug: true } },
       brand: { select: { id: true, name: true, slug: true } },
       seller: { select: { id: true, name: true } },
+      reviews: {
+        where: { approved: true },
+        orderBy: { createdAt: "desc" },
+        include: { user: { select: { id: true, name: true, image: true } } },
+      },
     },
   });
 

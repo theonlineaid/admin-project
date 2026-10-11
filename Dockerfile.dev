@@ -1,11 +1,12 @@
 # Development image: runs `next dev` against the source mounted from the host
-# (see docker-compose.dev.yml). Only dependencies are baked in.
+# Only dependencies and generated Prisma client are baked in.
 FROM node:20-alpine
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --ignore-scripts
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --ignore-scripts --prefer-offline
 
 COPY prisma ./prisma
 RUN npx prisma generate

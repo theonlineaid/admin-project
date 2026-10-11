@@ -55,6 +55,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   notifications Notification[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
 }
 
 model Account {
@@ -152,6 +154,8 @@ model Product {
   sku         String?
   images      String[] // JSON array of URLs
   status      String   @default("draft") // draft, active, archived
+  isFeatured  Boolean  @default(false)
+  badge       String?  // NEW, HOT, SALE, BESTSELLER
   categoryId  String
   subcategoryId String?
   brandId     String?
@@ -159,24 +163,31 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
-  brand       Brand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  seller      User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
+  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory   Subcategory?  @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  brand         Brand?        @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  seller        User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
 }
 
 model Order {
-  id            String        @id @default(cuid())
-  orderNumber   String        @unique
-  userId        String
-  totalPrice    Decimal       @db.Decimal(10, 2)
-  status        OrderStatus   @default(pending)
-  paymentStatus PaymentStatus @default(pending)
+  id             String        @id @default(cuid())
+  orderNumber    String        @unique
+  userId         String
+  totalPrice     Decimal       @db.Decimal(10, 2)
+  status         OrderStatus   @default(pending)
+  paymentStatus  PaymentStatus @default(pending)
   shippingAddress Json?       // { street, city, zip, country }
-  notes         String?      @db.Text
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  couponCode     String?
+  discountAmount Decimal?      @default(0) @db.Decimal(10, 2)
+  carrier        String?       // FedEx, DHL, UPS, USPS
+  trackingNumber String?
+  timeline       Json?         // [{ status, timestamp, note }]
+  notes          String?       @db.Text
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   user     User         @relation(fields: [userId], references: [id], onDelete: Restrict)
   items    OrderItem[]
@@ -209,18 +220,66 @@ model Payment {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
-// Singleton: one row for site-wide settings (logo, favicon, header/footer variant, topbar)
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  rating    Int      @default(5)
+  title     String?
+  comment   String?  @db.Text
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id                String    @id @default(cuid())
+  code              String    @unique
+  discountType      String    @default("percentage") // "percentage" | "fixed"
+  discountValue     Decimal   @db.Decimal(10, 2)
+  minOrderAmount    Decimal?  @db.Decimal(10, 2)
+  maxDiscountAmount Decimal?  @db.Decimal(10, 2)
+  usageLimit        Int?
+  usedCount         Int       @default(0)
+  startDate         DateTime  @default(now())
+  endDate           DateTime?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+// Singleton: one row for site-wide settings (logo, favicon, header/footer variant, topbar, currency, etc.)
 model SiteSettings {
-  id             String   @id @default(cuid())
-  logoUrl        String?
-  faviconUrl     String?
-  siteTitle      String?  @default("E-commerce")
-  headerVariant  String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
-  footerVariant  String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
-  homeVariant    String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
-  topbarEnabled  Boolean  @default(false)
-  topbarItems    Json?    // [{ id, type: "phone"|"promotion"|"address"|"custom", value }]
-  bannerUrls     Json?    // string[] – 3 to 5 banner image URLs (Cloudinary folder: banner)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  logoUrl                String?
+  faviconUrl             String?
+  siteTitle              String?  @default("E-commerce")
+  headerVariant          String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
+  footerVariant          String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
+  homeVariant            String?  @default("1")   // "1" | "2" | "3" | "4" | "5"
+  topbarEnabled          Boolean  @default(false)
+  topbarItems            Json?    // [{ id, type: "phone"|"promotion"|"address"|"custom", value }]
+  bannerUrls             Json?    // string[] – 3 to 5 banner image URLs (Cloudinary folder: banner)
+  currency               String?  @default("USD")
+  currencySymbol         String?  @default("$")
+  announcementText       String?  @default("🔥 Exclusive Offer: Get 15% OFF your order with coupon 'WELCOME15'!")
+  announcementEnabled    Boolean  @default(true)
+  freeShippingThreshold  Decimal? @default(100) @db.Decimal(10, 2)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
